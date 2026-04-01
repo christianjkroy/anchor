@@ -132,7 +132,15 @@ struct LogInteractionView: View {
             note: note
         )
         person.interactions.append(interaction)
+        HapticFeedback.medium()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
+
+        // Classify sentiment asynchronously after save
+        if !note.isEmpty && ClaudeService.hasAPIKey() {
+            Task {
+                try? await ClaudeService.shared.classifyPendingSentiments(for: person, context: modelContext)
+            }
+        }
     }
 }

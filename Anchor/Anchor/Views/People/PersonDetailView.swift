@@ -128,6 +128,13 @@ private struct StatsBarView: View {
                     .foregroundStyle(.secondary)
                 InitiationRatioBar(ratio: person.initiationRatio, height: 8)
             }
+
+            let dist = person.sentimentDistribution
+            SentimentDistributionBar(
+                anxious: dist.anxious,
+                secure: dist.secure,
+                avoidant: dist.avoidant
+            )
         }
     }
 }
@@ -170,6 +177,10 @@ struct InteractionRowView: View {
                 Text(interaction.timestamp.formatted(date: .abbreviated, time: .omitted))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if let label = interaction.sentimentLabel, let confidence = interaction.sentimentConfidence {
+                    SentimentBadge(label: label, confidence: confidence)
+                }
             }
 
             // Feelings row

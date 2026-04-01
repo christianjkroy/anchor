@@ -7,6 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB0201000000000000000000 /* ClaudeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0201000000000000000000 /* ClaudeModels.swift */; };
+		AB0202000000000000000000 /* ClaudePrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0202000000000000000000 /* ClaudePrompts.swift */; };
+		AB0203000000000000000000 /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0203000000000000000000 /* ClaudeService.swift */; };
+		AB0204000000000000000000 /* DigestNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0204000000000000000000 /* DigestNotificationService.swift */; };
+		AB0205000000000000000000 /* EncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0205000000000000000000 /* EncryptionService.swift */; };
+		AB0206000000000000000000 /* SupabaseModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0206000000000000000000 /* SupabaseModels.swift */; };
+		AB0207000000000000000000 /* SupabaseService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0207000000000000000000 /* SupabaseService.swift */; };
+		AB0208000000000000000000 /* Pattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0208000000000000000000 /* Pattern.swift */; };
+		AB0209000000000000000000 /* WeeklyDigest.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0209000000000000000000 /* WeeklyDigest.swift */; };
+		AB020A000000000000000000 /* SentimentBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA020A000000000000000000 /* SentimentBadge.swift */; };
+		AB020B000000000000000000 /* SentimentDistributionBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA020B000000000000000000 /* SentimentDistributionBar.swift */; };
+		AB020C000000000000000000 /* HapticFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA020C000000000000000000 /* HapticFeedback.swift */; };
+		AB020D000000000000000000 /* GraphViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA020D000000000000000000 /* GraphViewModel.swift */; };
+		AB020E000000000000000000 /* RelationshipGraphView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA020E000000000000000000 /* RelationshipGraphView.swift */; };
+		AB020F000000000000000000 /* ForceSimulation.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA020F000000000000000000 /* ForceSimulation.swift */; };
+		AB0210000000000000000000 /* GraphRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0210000000000000000000 /* GraphRenderer.swift */; };
+		AB0211000000000000000000 /* GraphShaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = AA0211000000000000000000 /* GraphShaders.metal */; };
+		AB0212000000000000000000 /* DigestListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0212000000000000000000 /* DigestListView.swift */; };
+		AB0213000000000000000000 /* DigestDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0213000000000000000000 /* DigestDetailView.swift */; };
+		AB0214000000000000000000 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0214000000000000000000 /* OnboardingView.swift */; };
+		AB0215000000000000000000 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0215000000000000000000 /* SettingsView.swift */; };
 		AB0000010000000000000000 /* AnchorApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000010000000000000000 /* AnchorApp.swift */; };
 		AB0000020000000000000000 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000020000000000000000 /* ContentView.swift */; };
 		AB0000030000000000000000 /* Enums.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000030000000000000000 /* Enums.swift */; };
@@ -25,6 +46,27 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AA0201000000000000000000 /* ClaudeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeModels.swift; sourceTree = "<group>"; };
+		AA0202000000000000000000 /* ClaudePrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudePrompts.swift; sourceTree = "<group>"; };
+		AA0203000000000000000000 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
+		AA0204000000000000000000 /* DigestNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestNotificationService.swift; sourceTree = "<group>"; };
+		AA0205000000000000000000 /* EncryptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptionService.swift; sourceTree = "<group>"; };
+		AA0206000000000000000000 /* SupabaseModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseModels.swift; sourceTree = "<group>"; };
+		AA0207000000000000000000 /* SupabaseService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseService.swift; sourceTree = "<group>"; };
+		AA0208000000000000000000 /* Pattern.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pattern.swift; sourceTree = "<group>"; };
+		AA0209000000000000000000 /* WeeklyDigest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyDigest.swift; sourceTree = "<group>"; };
+		AA020A000000000000000000 /* SentimentBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentBadge.swift; sourceTree = "<group>"; };
+		AA020B000000000000000000 /* SentimentDistributionBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SentimentDistributionBar.swift; sourceTree = "<group>"; };
+		AA020C000000000000000000 /* HapticFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticFeedback.swift; sourceTree = "<group>"; };
+		AA020D000000000000000000 /* GraphViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphViewModel.swift; sourceTree = "<group>"; };
+		AA020E000000000000000000 /* RelationshipGraphView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RelationshipGraphView.swift; sourceTree = "<group>"; };
+		AA020F000000000000000000 /* ForceSimulation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForceSimulation.swift; sourceTree = "<group>"; };
+		AA0210000000000000000000 /* GraphRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphRenderer.swift; sourceTree = "<group>"; };
+		AA0211000000000000000000 /* GraphShaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = GraphShaders.metal; sourceTree = "<group>"; };
+		AA0212000000000000000000 /* DigestListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestListView.swift; sourceTree = "<group>"; };
+		AA0213000000000000000000 /* DigestDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestDetailView.swift; sourceTree = "<group>"; };
+		AA0214000000000000000000 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		AA0215000000000000000000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AA0000010000000000000000 /* AnchorApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnchorApp.swift; sourceTree = "<group>"; };
 		AA0000020000000000000000 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AA0000030000000000000000 /* Enums.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Enums.swift; sourceTree = "<group>"; };
@@ -76,6 +118,7 @@
 				AA0000010000000000000000 /* AnchorApp.swift */,
 				AA0000020000000000000000 /* ContentView.swift */,
 				AC0000040000000000000000 /* Models */,
+				AC0B01000000000000000000 /* Services */,
 				AC0000050000000000000000 /* Views */,
 				AA00000D0000000000000000 /* Assets.xcassets */,
 				AC00000A0000000000000000 /* Preview Content */,
@@ -89,6 +132,8 @@
 				AA0000030000000000000000 /* Enums.swift */,
 				AA0000040000000000000000 /* Person.swift */,
 				AA0000050000000000000000 /* Interaction.swift */,
+				AA0208000000000000000000 /* Pattern.swift */,
+				AA0209000000000000000000 /* WeeklyDigest.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -100,6 +145,9 @@
 				AC0000070000000000000000 /* People */,
 				AC0000080000000000000000 /* Interactions */,
 				AC0000090000000000000000 /* Graph */,
+				AC0B06000000000000000000 /* Digests */,
+				AC0B07000000000000000000 /* Onboarding */,
+				AC0B08000000000000000000 /* Settings */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -109,6 +157,9 @@
 			children = (
 				AA0000060000000000000000 /* PillSelector.swift */,
 				AA0000160000000000000000 /* InitiationRatioBar.swift */,
+				AA020A000000000000000000 /* SentimentBadge.swift */,
+				AA020B000000000000000000 /* SentimentDistributionBar.swift */,
+				AA020C000000000000000000 /* HapticFeedback.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -136,6 +187,9 @@
 			isa = PBXGroup;
 			children = (
 				AA00000C0000000000000000 /* GraphPlaceholderView.swift */,
+				AA020D000000000000000000 /* GraphViewModel.swift */,
+				AA020E000000000000000000 /* RelationshipGraphView.swift */,
+				AC0B05000000000000000000 /* Metal */,
 			);
 			path = Graph;
 			sourceTree = "<group>";
@@ -147,6 +201,88 @@
 			);
 			name = "Preview Content";
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+
+		AC0B01000000000000000000 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				
+				AC0B02000000000000000000 /* Claude */,
+				AC0B03000000000000000000 /* Notifications */,
+				AC0B04000000000000000000 /* Supabase */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+
+		AC0B02000000000000000000 /* Claude */ = {
+			isa = PBXGroup;
+			children = (
+								AA0201000000000000000000 /* ClaudeModels.swift */,
+				AA0202000000000000000000 /* ClaudePrompts.swift */,
+				AA0203000000000000000000 /* ClaudeService.swift */,
+			);
+			path = Claude;
+			sourceTree = "<group>";
+		};
+
+		AC0B03000000000000000000 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+								AA0204000000000000000000 /* DigestNotificationService.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+
+		AC0B04000000000000000000 /* Supabase */ = {
+			isa = PBXGroup;
+			children = (
+								AA0205000000000000000000 /* EncryptionService.swift */,
+				AA0206000000000000000000 /* SupabaseModels.swift */,
+				AA0207000000000000000000 /* SupabaseService.swift */,
+			);
+			path = Supabase;
+			sourceTree = "<group>";
+		};
+
+		AC0B05000000000000000000 /* Metal */ = {
+			isa = PBXGroup;
+			children = (
+								AA020F000000000000000000 /* ForceSimulation.swift */,
+				AA0210000000000000000000 /* GraphRenderer.swift */,
+				AA0211000000000000000000 /* GraphShaders.metal */,
+			);
+			path = Metal;
+			sourceTree = "<group>";
+		};
+
+		AC0B06000000000000000000 /* Digests */ = {
+			isa = PBXGroup;
+			children = (
+								AA0212000000000000000000 /* DigestListView.swift */,
+				AA0213000000000000000000 /* DigestDetailView.swift */,
+			);
+			path = Digests;
+			sourceTree = "<group>";
+		};
+
+		AC0B07000000000000000000 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+								AA0214000000000000000000 /* OnboardingView.swift */,
+			);
+			path = Onboarding;
+			sourceTree = "<group>";
+		};
+
+		AC0B08000000000000000000 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+								AA0215000000000000000000 /* SettingsView.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -232,6 +368,28 @@
 				AB00000A0000000000000000 /* AddPersonView.swift in Sources */,
 				AB00000B0000000000000000 /* LogInteractionView.swift in Sources */,
 				AB00000C0000000000000000 /* GraphPlaceholderView.swift in Sources */,
+			
+				AB0201000000000000000000 /* ClaudeModels.swift in Sources */,
+				AB0202000000000000000000 /* ClaudePrompts.swift in Sources */,
+				AB0203000000000000000000 /* ClaudeService.swift in Sources */,
+				AB0204000000000000000000 /* DigestNotificationService.swift in Sources */,
+				AB0205000000000000000000 /* EncryptionService.swift in Sources */,
+				AB0206000000000000000000 /* SupabaseModels.swift in Sources */,
+				AB0207000000000000000000 /* SupabaseService.swift in Sources */,
+				AB0208000000000000000000 /* Pattern.swift in Sources */,
+				AB0209000000000000000000 /* WeeklyDigest.swift in Sources */,
+				AB020A000000000000000000 /* SentimentBadge.swift in Sources */,
+				AB020B000000000000000000 /* SentimentDistributionBar.swift in Sources */,
+				AB020C000000000000000000 /* HapticFeedback.swift in Sources */,
+				AB020D000000000000000000 /* GraphViewModel.swift in Sources */,
+				AB020E000000000000000000 /* RelationshipGraphView.swift in Sources */,
+				AB020F000000000000000000 /* ForceSimulation.swift in Sources */,
+				AB0210000000000000000000 /* GraphRenderer.swift in Sources */,
+				AB0211000000000000000000 /* GraphShaders.metal in Sources */,
+				AB0212000000000000000000 /* DigestListView.swift in Sources */,
+				AB0213000000000000000000 /* DigestDetailView.swift in Sources */,
+				AB0214000000000000000000 /* OnboardingView.swift in Sources */,
+				AB0215000000000000000000 /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1,8 +1,13 @@
 import SwiftUI
+import SwiftData
 
 struct PersonDetailView: View {
     let person: Person
+    @Environment(\.modelContext) private var modelContext
     @State private var showLogInteraction = false
+    @State private var patterns: [Pattern] = []
+    @State private var isDetectingPatterns = false
+    @State private var patternError: String?
 
     private var sortedInteractions: [Interaction] {
         person.interactions.sorted { $0.timestamp > $1.timestamp }
@@ -22,6 +27,19 @@ struct PersonDetailView: View {
                     .padding()
 
                 Divider()
+
+                // Patterns section
+                if !patterns.isEmpty || person.interactions.count >= 4 {
+                    PatternsSection(
+                        patterns: patterns,
+                        isLoading: isDetectingPatterns,
+                        canDetect: person.interactions.count >= 4 && ClaudeService.hasAPIKey(),
+                        onDetect: { Task { await detectPatterns() } }
+                    )
+                    .padding()
+
+                    Divider()
+                }
 
                 // Interactions list
                 if sortedInteractions.isEmpty {
@@ -68,6 +86,42 @@ struct PersonDetailView: View {
         .navigationBarTitleDisplayMode(.large)
         .sheet(isPresented: $showLogInteraction) {
             LogInteractionView(person: person)
+        }
+        .onAppear {
+            // Load any previously saved patterns for this person
+            let name = person.name
+            patterns = (try? modelContext.fetch(
+                FetchDescriptor<Pattern>(predicate: #Predicate { $0.personName == name })
+            )) ?? []
+        }
+        .alert("Pattern detection failed", isPresented: .constant(patternError != nil)) {
+            Button("OK") { patternError = nil }
+        } message: {
+            Text(patternError ?? "")
+        }
+    }
+
+    private func detectPatterns() async {
+        isDetectingPatterns = true
+        defer { isDetectingPatterns = false }
+        do {
+            let results = try await ClaudeService.shared.detectPatterns(for: person)
+            // Delete old patterns for this person
+            let name = person.name
+            let old = (try? modelContext.fetch(
+                FetchDescriptor<Pattern>(predicate: #Predicate { $0.personName == name })
+            )) ?? []
+            old.forEach { modelContext.delete($0) }
+
+            patterns = results.map { r in
+                let p = Pattern(patternType: r.type, summary: r.summary, detail: r.detail, severity: r.severity, personName: person.name)
+                modelContext.insert(p)
+                return p
+            }
+            try? modelContext.save()
+            HapticFeedback.success()
+        } catch {
+            patternError = error.localizedDescription
         }
     }
 }
@@ -230,5 +284,95 @@ private struct FeelPill: View {
             .padding(.vertical, 3)
             .background(Capsule().fill(color.opacity(0.15)))
             .foregroundStyle(color)
+    }
+}
+
+// MARK: - Patterns Section
+
+private struct PatternsSection: View {
+    let patterns: [Pattern]
+    let isLoading: Bool
+    let canDetect: Bool
+    let onDetect: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Patterns")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    onDetect()
+                } label: {
+                    if isLoading {
+                        ProgressView().tint(AnchorColors.secure)
+                    } else {
+                        Label(patterns.isEmpty ? "Detect" : "Refresh", systemImage: "wand.and.stars")
+                            .font(.caption)
+                            .foregroundStyle(AnchorColors.secure)
+                    }
+                }
+                .disabled(!canDetect || isLoading)
+            }
+
+            if patterns.isEmpty && !isLoading {
+                Text(canDetect ? "Tap Detect to analyze your interaction history." : "Log at least 4 interactions and add an API key to detect patterns.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(patterns) { pattern in
+                    PersonPatternRow(pattern: pattern)
+                }
+            }
+        }
+    }
+}
+
+private struct PersonPatternRow: View {
+    let pattern: Pattern
+    @State private var expanded = false
+
+    var severityColor: Color {
+        switch pattern.severity {
+        case .high:   return AnchorColors.anxious
+        case .medium: return Color(red: 0.88, green: 0.78, blue: 0.55)
+        case .low:    return AnchorColors.secure
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: pattern.patternType.systemImage)
+                    .font(.caption)
+                    .foregroundStyle(severityColor)
+                Text(pattern.summary)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Spacer()
+                Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+            if expanded {
+                Text(pattern.detail)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineSpacing(3)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.secondarySystemBackground))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(severityColor.opacity(0.25), lineWidth: 1))
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                expanded.toggle()
+            }
+        }
     }
 }

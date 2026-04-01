@@ -66,6 +66,7 @@ struct AnchorApp: App {
     private func shouldGenerateDigest(lastDate: Date?) -> Bool {
         guard let last = lastDate else { return true }
         let days = Calendar.current.dateComponents([.day], from: last, to: .now).day ?? 0
-        return days >= 7
+        let isSunday = Calendar.current.component(.weekday, from: .now) == 1
+        return days >= 7 && isSunday
     }
 }

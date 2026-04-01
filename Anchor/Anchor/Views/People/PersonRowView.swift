@@ -70,6 +70,12 @@ struct AvatarView: View {
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
+        .overlay {
+            if let sentiment = person.dominantSentiment {
+                Circle()
+                    .strokeBorder(sentiment.color, lineWidth: 2.5)
+            }
+        }
     }
 }
 

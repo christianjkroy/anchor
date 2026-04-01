@@ -1,5 +1,6 @@
 import Foundation
 import Network
+import UIKit
 
 // MARK: - Supabase configuration
 // Set these before shipping. Add to environment or secure config.

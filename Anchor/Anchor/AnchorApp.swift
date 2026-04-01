@@ -8,6 +8,10 @@ struct AnchorApp: App {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @AppStorage("lastDigestTimestamp") private var lastDigestTimestamp: Double = 0
 
+    private let container: ModelContainer = {
+        try! ModelContainer(for: Person.self, Interaction.self, Pattern.self, WeeklyDigest.self)
+    }()
+
     var body: some Scene {
         WindowGroup {
             if hasCompletedOnboarding {
@@ -16,7 +20,7 @@ struct AnchorApp: App {
                 OnboardingView(isComplete: $hasCompletedOnboarding)
             }
         }
-        .modelContainer(for: [Person.self, Interaction.self, Pattern.self, WeeklyDigest.self])
+        .modelContainer(container)
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 Task {
@@ -30,15 +34,12 @@ struct AnchorApp: App {
     @MainActor
     private func checkAndGenerateDigest() async {
         guard ClaudeService.hasAPIKey() else { return }
-
         let last = lastDigestTimestamp == 0 ? nil : Date(timeIntervalSince1970: lastDigestTimestamp)
         guard shouldGenerateDigest(lastDate: last) else { return }
 
+        let context = container.mainContext
         do {
-            let container = try ModelContainer(for: Person.self, Interaction.self, Pattern.self, WeeklyDigest.self)
-            let context = container.mainContext
             let people = try context.fetch(FetchDescriptor<Person>())
-
             let result = try await ClaudeService.shared.generateWeeklyDigest(people: people)
             let weekStart = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
             let digest = WeeklyDigest(

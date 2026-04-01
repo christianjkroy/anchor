@@ -145,18 +145,15 @@ final class GraphRenderer: NSObject, MTKViewDelegate {
 
         for (i, node) in nodes.enumerated() {
             let isSelected = selectedNodeIndex == i ? UInt32(1) : UInt32(0)
-            let r = node.radius + panOffset.x * 0 // just to reference panOffset; actual position uses pan
             let pos = node.position + panOffset
 
             let base = UInt16(verts.count)
-            // 4 corners of a quad: TL, TR, BL, BR
             let uvs: [SIMD2<Float>] = [
                 SIMD2<Float>(-1, -1),
                 SIMD2<Float>( 1, -1),
                 SIMD2<Float>(-1,  1),
                 SIMD2<Float>( 1,  1)
             ]
-            let _ = r
             for uv in uvs {
                 verts.append(NodeVertex(
                     position: pos + uv * node.radius,

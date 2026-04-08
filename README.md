@@ -37,6 +37,12 @@ Anchor is a relationship intelligence system that helps compare anxious percepti
    - `npm install`
    - `npm run dev`
 
+## Project Status
+
+- The React dashboard and Node API are intended to run together locally, with the backend serving the built dashboard in production.
+- OpenAI and the R analysis service are optional. If they are not configured, the app falls back to deterministic local logic for logging and perception scoring.
+- Before committing, make sure generated folders like `node_modules/`, `web/dist/`, `.venv/`, and `__pycache__/` are not tracked.
+
 ## Notes
 
 - If `OPENAI_API_KEY` is not set, the backend still works with deterministic fallback logic.

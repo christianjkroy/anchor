@@ -16,7 +16,7 @@ export default function AuthGate({ onAuthenticated }) {
 
     try {
       const payload = { email, password, displayName };
-      const data = isRegister ? await api.register(payload) : await api.login(payload);
+      const data = isRegister ? await api.auth.register(payload) : await api.auth.login(payload);
       setToken(data.token);
       onAuthenticated(data.user);
     } catch (err) {

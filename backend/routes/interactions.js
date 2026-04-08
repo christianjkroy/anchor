@@ -6,7 +6,9 @@ import { asyncHandler } from '../middleware/async_handler.js';
 export const interactionsRouter = Router();
 
 interactionsRouter.get('/', asyncHandler(async (req, res) => {
-  const { personId, limit = 50, offset = 0 } = req.query;
+  const { personId } = req.query;
+  const limit = clampInteger(req.query.limit, 50, { min: 1, max: 200 });
+  const offset = clampInteger(req.query.offset, 0, { min: 0, max: 5000 });
   let query = 'SELECT i.*, p.name AS person_name FROM interactions i JOIN persons p ON p.id = i.person_id WHERE i.user_id = $1';
   const values = [req.user.userId];
   if (personId) {
@@ -14,7 +16,7 @@ interactionsRouter.get('/', asyncHandler(async (req, res) => {
     values.push(personId);
   }
   query += ` ORDER BY i.created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
-  values.push(Number(limit), Number(offset));
+  values.push(limit, offset);
   const { rows } = await pool.query(query, values);
   res.json(rows);
 }));
@@ -35,6 +37,10 @@ interactionsRouter.post('/', asyncHandler(async (req, res) => {
   if (!validType.includes(finalType)) return res.status(400).json({ error: 'invalid type' });
   if (!validInitiatedBy.includes(finalInitiatedBy)) return res.status(400).json({ error: 'invalid initiatedBy' });
 
+  const normalizedEnergyRating = normalizeOptionalScore(energyRating, { min: -1, max: 1, field: 'energyRating' });
+  const normalizedVibeRating = normalizeOptionalScore(vibeRating, { min: -1, max: 1, field: 'vibeRating' });
+  const normalizedDuration = normalizeOptionalInteger(durationMinutes, { min: 0, max: 24 * 60, field: 'durationMinutes' });
+
   // Verify person belongs to user
   const personCheck = await pool.query('SELECT id FROM persons WHERE id = $1 AND user_id = $2', [personId, req.user.userId]);
   if (!personCheck.rows[0]) return res.status(404).json({ error: 'Person not found' });
@@ -46,8 +52,8 @@ interactionsRouter.post('/', asyncHandler(async (req, res) => {
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
      RETURNING *`,
     [req.user.userId, personId, finalType, finalInitiatedBy, feelingBefore ?? null, feelingDuring ?? null,
-     feelingAfter ?? null, locationContext ?? null, durationMinutes ?? null,
-     energyRating ?? null, vibeRating ?? null, note ?? '']
+     feelingAfter ?? null, locationContext ?? null, normalizedDuration,
+     normalizedEnergyRating, normalizedVibeRating, typeof note === 'string' ? note.trim() : '']
   );
   const interaction = rows[0];
 
@@ -81,6 +87,7 @@ interactionsRouter.delete('/:id', asyncHandler(async (req, res) => {
 interactionsRouter.post('/search', asyncHandler(async (req, res) => {
   const { embedding, limit = 10 } = req.body;
   if (!Array.isArray(embedding)) return res.status(400).json({ error: 'embedding array required' });
+  const normalizedLimit = clampInteger(limit, 10, { min: 1, max: 50 });
   const { rows } = await pool.query(
     `SELECT i.*, p.name AS person_name,
             (embedding <=> $1::vector) AS distance
@@ -89,7 +96,35 @@ interactionsRouter.post('/search', asyncHandler(async (req, res) => {
      WHERE i.user_id = $2 AND i.embedding IS NOT NULL
      ORDER BY distance ASC
      LIMIT $3`,
-    [`[${embedding.join(',')}]`, req.user.userId, Number(limit)]
+    [`[${embedding.join(',')}]`, req.user.userId, normalizedLimit]
   );
   res.json(rows);
 }));
+
+function clampInteger(value, fallback, { min, max }) {
+  const parsed = Number.parseInt(value ?? fallback, 10);
+  if (Number.isNaN(parsed)) return fallback;
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function normalizeOptionalScore(value, { min, max, field }) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    const error = new Error(`${field} must be between ${min} and ${max}`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return parsed;
+}
+
+function normalizeOptionalInteger(value, { min, max, field }) {
+  if (value === undefined || value === null || value === '') return null;
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed < min || parsed > max) {
+    const error = new Error(`${field} must be between ${min} and ${max}`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return parsed;
+}

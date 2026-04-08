@@ -3,8 +3,11 @@ import AuthGate from './components/AuthGate.jsx';
 import { api, getToken, setToken } from './api.js';
 import OverviewPage from './pages/OverviewPage.jsx';
 import InsightsPage from './pages/InsightsPage.jsx';
+import PeoplePage from './pages/PeoplePage.jsx';
+import DigestPage from './pages/DigestPage.jsx';
+import GraphPage from './pages/GraphPage.jsx';
 
-const TABS = ['overview', 'insights'];
+const TABS = ['overview', 'insights', 'people', 'graph', 'digests'];
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -25,7 +28,7 @@ export default function App() {
   async function bootstrap() {
     if (!getToken()) return;
     try {
-      const me = await api.me();
+      const me = await api.auth.me();
       setUser(me);
       await refresh();
     } catch {
@@ -37,11 +40,11 @@ export default function App() {
   async function refresh() {
     setError('');
     const [peopleData, interactionData, networkData, insightData, digestData] = await Promise.all([
-      api.persons(),
-      api.interactions('?limit=50'),
-      api.network(),
-      api.insights(),
-      api.digests(),
+      api.persons.list(),
+      api.interactions.list({ limit: 50 }),
+      api.persons.network(),
+      api.insights.list(),
+      api.digest.list(),
     ]);
 
     setPeople(peopleData);
@@ -55,7 +58,7 @@ export default function App() {
     setLoading(true);
     setError('');
     try {
-      await api.createInteraction(payload);
+      await api.interactions.create(payload);
       await refresh();
     } catch (err) {
       setError(err.message);
@@ -68,7 +71,7 @@ export default function App() {
     setLoading(true);
     setError('');
     try {
-      await api.createPerson(payload);
+      await api.persons.create(payload);
       await refresh();
     } catch (err) {
       setError(err.message);
@@ -81,7 +84,7 @@ export default function App() {
     setLoading(true);
     setError('');
     try {
-      await api.generateDigest({});
+      await api.digest.generate({});
       await refresh();
     } catch (err) {
       setError(err.message);
@@ -120,16 +123,20 @@ export default function App() {
 
       {error ? <p className="error-text">{error}</p> : null}
 
-      {tab === 'overview' ? (
+      {tab === 'overview' && (
         <OverviewPage
           data={data}
           onCreateInteraction={handleCreateInteraction}
           onCreatePerson={handleCreatePerson}
           loading={loading}
         />
-      ) : (
+      )}
+      {tab === 'insights' && (
         <InsightsPage insights={insights} digests={digests} onGenerateDigest={handleGenerateDigest} loading={loading} />
       )}
+      {tab === 'people' && <PeoplePage />}
+      {tab === 'graph' && <GraphPage network={network} />}
+      {tab === 'digests' && <DigestPage digests={digests} onGenerateDigest={handleGenerateDigest} loading={loading} />}
     </div>
   );
 }

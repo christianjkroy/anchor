@@ -27,3 +27,20 @@ Pods/
 
 # Xcode Previews
 Previews/
+
+# Node / web
+node_modules/
+dist/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Environment files
+.env
+.env.local
+backend/.env
+web/.env

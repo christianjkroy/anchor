@@ -1,27 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { api } from '../api';
 
-export default function DigestPage() {
-  const [digests, setDigests] = useState([]);
+export default function DigestPage({ digests = [], onGenerateDigest, loading = false }) {
   const [selected, setSelected] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.digest.list().then(data => {
-      setDigests(data);
-      if (data.length) setSelected(data[0]);
-      setLoading(false);
+    setSelected((current) => {
+      if (current && digests.some((digest) => digest.id === current.id)) {
+        return current;
+      }
+      return digests[0] ?? null;
     });
-  }, []);
-
-  if (loading) return <div className="loading">Loading…</div>;
+  }, [digests]);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 24 }}>
-      {/* Digest list */}
       <div>
         <div className="page-header" style={{ marginBottom: 16 }}>
           <h1 className="page-title">Digests</h1>
+          <button className="btn btn--primary" onClick={onGenerateDigest} disabled={loading}>
+            {loading ? 'Generating…' : 'Generate latest'}
+          </button>
         </div>
         <div className="card" style={{ padding: 0 }}>
           {digests.length === 0 && <p className="empty-state">No digests yet. They generate on Sundays.</p>}
@@ -45,7 +43,6 @@ export default function DigestPage() {
         </div>
       </div>
 
-      {/* Digest detail */}
       <div>
         {!selected && <div className="empty-state" style={{ paddingTop: 80 }}>Select a digest.</div>}
         {selected && <DigestDetail digest={selected} />}
@@ -55,8 +52,14 @@ export default function DigestPage() {
 }
 
 function DigestDetail({ digest }) {
-  const patterns = digest.patterns ?? [];
-  const changes = digest.initiation_changes ?? [];
+  const patterns = Array.isArray(digest.patterns)
+    ? digest.patterns
+    : digest.patterns?.topInsights?.map((content) => ({ summary: content, detail: '' })) ?? [];
+  const changes = Array.isArray(digest.initiation_changes)
+    ? digest.initiation_changes
+    : digest.initiation_changes
+      ? [digest.initiation_changes]
+      : [];
 
   return (
     <div>
@@ -92,13 +95,12 @@ function DigestDetail({ digest }) {
           <h3 style={{ fontWeight: 600, marginBottom: 12, fontSize: '0.9rem' }}>Initiation Changes</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {changes.map((c, i) => {
-              const delta = c.currentRatio - c.previousRatio;
               return (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{c.personName}</span>
-                  <span style={{ fontSize: '0.8rem', color: delta > 0 ? 'var(--color-anxious)' : 'var(--color-secure)' }}>
-                    {Math.round(c.previousRatio * 100)}% → {Math.round(c.currentRatio * 100)}%
-                    ({delta > 0 ? '+' : ''}{Math.round(delta * 100)}%)
+                  <span style={{ fontWeight: 500, fontSize: '0.875rem' }}>{c.personName ?? 'Weekly initiation ratio'}</span>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--color-secure)' }}>
+                    {Math.round((c.ratio ?? c.currentRatio ?? 0) * 100)}%
+                    {typeof c.total === 'number' ? ` across ${c.total} interaction${c.total === 1 ? '' : 's'}` : ''}
                   </span>
                 </div>
               );

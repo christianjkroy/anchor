@@ -34,19 +34,46 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+function buildQuery(params = {}) {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null) q.set(k, String(v));
+  }
+  const s = q.toString();
+  return s ? `?${s}` : '';
+}
+
 export const api = {
-  register: (payload) => request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
-  login: (payload) => request('/auth/login', { method: 'POST', body: JSON.stringify(payload) }),
-  me: () => request('/auth/me'),
-  persons: () => request('/persons'),
-  createPerson: (payload) => request('/persons', { method: 'POST', body: JSON.stringify(payload) }),
-  personStats: (personId) => request(`/persons/${personId}/stats`),
-  network: () => request('/persons/graph/network'),
-  interactions: (params = '') => request(`/interactions${params}`),
-  createInteraction: (payload) => request('/interactions', { method: 'POST', body: JSON.stringify(payload) }),
-  insights: () => request('/insights'),
-  perceptionChecks: () => request('/perception'),
-  createPerceptionCheck: (payload) => request('/perception', { method: 'POST', body: JSON.stringify(payload) }),
-  digests: () => request('/digest'),
-  generateDigest: (payload = {}) => request('/digest/generate', { method: 'POST', body: JSON.stringify(payload) }),
+  auth: {
+    register: (payload) => request('/auth/register', { method: 'POST', body: JSON.stringify(payload) }),
+    login:    (payload) => request('/auth/login',    { method: 'POST', body: JSON.stringify(payload) }),
+    me:       ()        => request('/auth/me'),
+  },
+
+  persons: {
+    list:    ()         => request('/persons'),
+    create:  (payload)  => request('/persons', { method: 'POST', body: JSON.stringify(payload) }),
+    stats:   (id)       => request(`/persons/${id}/stats`),
+    network: ()         => request('/persons/graph/network'),
+  },
+
+  interactions: {
+    list:   (params = {}) => request(`/interactions${buildQuery(params)}`),
+    create: (payload)     => request('/interactions', { method: 'POST', body: JSON.stringify(payload) }),
+  },
+
+  insights: {
+    list: () => request('/insights'),
+  },
+
+  perception: {
+    list:   ()                        => request('/perception'),
+    submit: (personId, perceivedScore) =>
+      request('/perception', { method: 'POST', body: JSON.stringify({ personId, perceivedScore }) }),
+  },
+
+  digest: {
+    list:     ()        => request('/digest'),
+    generate: (payload) => request('/digest/generate', { method: 'POST', body: JSON.stringify(payload) }),
+  },
 };

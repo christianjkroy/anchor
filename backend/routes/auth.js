@@ -8,12 +8,15 @@ export const authRouter = Router();
 
 authRouter.post('/register', asyncHandler(async (req, res) => {
   const { email, password, displayName } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'email and password required' });
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !password) return res.status(400).json({ error: 'email and password required' });
+  if (password.length < 8) return res.status(400).json({ error: 'password must be at least 8 characters' });
+
   const hash = await bcrypt.hash(password, 12);
   try {
     const { rows } = await pool.query(
       'INSERT INTO users (email, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, email, display_name',
-      [email.toLowerCase().trim(), hash, displayName ?? null]
+      [normalizedEmail, hash, normalizeDisplayName(displayName)]
     );
     const token = jwt.sign({ userId: rows[0].id }, process.env.JWT_SECRET, { expiresIn: '90d' });
     res.status(201).json({ token, user: rows[0] });
@@ -25,7 +28,10 @@ authRouter.post('/register', asyncHandler(async (req, res) => {
 
 authRouter.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail || !password) return res.status(400).json({ error: 'email and password required' });
+
+  const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [normalizedEmail]);
   const user = rows[0];
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     return res.status(401).json({ error: 'Invalid credentials' });
@@ -46,3 +52,14 @@ authRouter.get('/me', asyncHandler(async (req, res) => {
     res.status(401).json({ error: 'Invalid token' });
   }
 }));
+
+function normalizeEmail(value) {
+  if (typeof value !== 'string') return '';
+  return value.trim().toLowerCase();
+}
+
+function normalizeDisplayName(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed || null;
+}

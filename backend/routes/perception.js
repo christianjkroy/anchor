@@ -80,10 +80,16 @@ perceptionRouter.post('/', asyncHandler(async (req, res) => {
     });
   } catch {
     // Compute locally if R is unavailable
+    const perceived = Number(perceivedScore);
+    const divergence = computeDivergence(perceived, localRealityScore);
     divergenceResult = {
       reality_score: localRealityScore,
-      divergence: computeDivergence(perceivedScore, localRealityScore),
-      direction: perceivedScore < localRealityScore ? 'underestimating' : 'overestimating',
+      divergence,
+      direction: divergence === 0
+        ? 'aligned'
+        : perceived < localRealityScore
+          ? 'underestimating'
+          : 'overestimating',
     };
   }
 

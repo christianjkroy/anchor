@@ -85,6 +85,20 @@ struct AddPersonView: View {
         try? modelContext.save()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
+
+        let pName    = person.name
+        let pRelType = person.relationshipType.rawValue.lowercased()
+
+        Task { @MainActor in
+            let backendId = await AnchorAPIService.shared.syncPerson(
+                name: pName,
+                relationshipType: pRelType
+            )
+            if let backendId {
+                person.backendId = backendId
+                try? modelContext.save()
+            }
+        }
     }
 }
 

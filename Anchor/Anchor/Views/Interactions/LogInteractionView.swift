@@ -193,9 +193,48 @@ struct LogInteractionView: View {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
 
-        // Classify sentiment asynchronously after save
-        Task {
+        // Snapshot enum values before the async boundary
+        let iType         = interactionType.backendValue
+        let iInitiatedBy  = initiator.backendValue
+        let iBefore       = feelingBefore.rawValue.lowercased()
+        let iDuring       = feelingDuring.rawValue.lowercased()
+        let iAfter        = feelingAfter.rawValue.lowercased()
+        let iLocation     = locationContext?.rawValue.lowercased()
+        let iDuration     = Int(durationText)
+        let iNote         = note
+
+        // Classify sentiment and sync to backend
+        Task { @MainActor in
             try? await ClaudeService.shared.classifyPendingSentiments(for: person, context: modelContext)
+
+            // Ensure person is synced first
+            if person.backendId == nil {
+                let pid = await AnchorAPIService.shared.syncPerson(
+                    name: person.name,
+                    relationshipType: person.relationshipType.rawValue.lowercased()
+                )
+                if let pid {
+                    person.backendId = pid
+                    try? modelContext.save()
+                }
+            }
+
+            guard let backendPersonId = person.backendId else { return }
+            let backendId = await AnchorAPIService.shared.syncInteraction(
+                backendPersonId: backendPersonId,
+                type: iType,
+                initiatedBy: iInitiatedBy,
+                feelingBefore: iBefore,
+                feelingDuring: iDuring,
+                feelingAfter: iAfter,
+                locationContext: iLocation,
+                durationMinutes: iDuration,
+                note: iNote
+            )
+            if let backendId {
+                interaction.backendId = backendId
+                try? modelContext.save()
+            }
         }
     }
 }

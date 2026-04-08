@@ -17,6 +17,8 @@ final class Interaction {
     var sentimentConfidence: Double?
     // Populated in Phase 5
     var noteEmbedding: [Float]?
+    /// Backend UUID, populated after first successful sync.
+    var backendId: String?
 
     var person: Person?
 

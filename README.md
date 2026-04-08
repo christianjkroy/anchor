@@ -1,6 +1,15 @@
 # Anchor
 
-Anchor is a relationship intelligence system that helps compare anxious perception to behavioral reality.
+Anchor is a relationship intelligence system for logging interactions, measuring relationship patterns, and comparing anxious perception to behavioral reality across iOS, backend, web, and model-training workflows.
+
+## What It Does
+
+- Log people and interactions from the iOS app
+- Track relationship metrics like initiation ratio, consistency, and reality score
+- Run an asynchronous insight pipeline with logger, analyzer, and critic stages
+- Generate weekly digests and perception checks
+- Support a lightweight web dashboard for reviewing relationship data
+- Provide training and export scripts for experimentation with local sentiment models
 
 ## Stack
 
@@ -13,10 +22,10 @@ Anchor is a relationship intelligence system that helps compare anxious percepti
 
 ## Repository Layout
 
-- `Anchor/` iOS app code
-- `backend/` Node API, SQL migrations, agents, R integration
-- `web/` React dashboard
-- `training/` model fine-tuning + validation + Core ML conversion scripts
+- `Anchor/`: iOS app code
+- `backend/`: Node API, SQL migrations, agents, and R integration
+- `web/`: React dashboard
+- `training/`: model fine-tuning, export, validation, and Core ML conversion scripts
 
 ## Quick Start
 
@@ -37,15 +46,15 @@ Anchor is a relationship intelligence system that helps compare anxious percepti
    - `npm install`
    - `npm run dev`
 
-## Project Status
+## Optional Services
 
-- The React dashboard and Node API are intended to run together locally, with the backend serving the built dashboard in production.
-- OpenAI and the R analysis service are optional. If they are not configured, the app falls back to deterministic local logic for logging and perception scoring.
-- Before committing, make sure generated folders like `node_modules/`, `web/dist/`, `.venv/`, and `__pycache__/` are not tracked.
+- `OPENAI_API_KEY`: enables richer agent behavior for the logger, analyzer, and critic pipeline
+- `R_PLUMBER_URL`: enables R-backed perception and statistical analysis
+- Without those services configured, the backend falls back to deterministic local logic where possible
 
 ## Notes
 
-- If `OPENAI_API_KEY` is not set, the backend still works with deterministic fallback logic.
 - The agent pipeline runs asynchronously after interaction creation.
 - `weekly_digests` supports upsert by `(user_id, week_start_date)`.
 - R analysis requires an installed R runtime with `plumber` and `jsonlite` (and optionally `DBI` + `RPostgres`).
+- Generated folders like `node_modules/`, `web/dist/`, `.venv/`, and `__pycache__/` should remain untracked.

@@ -7,6 +7,8 @@ final class Person {
     var relationshipType: RelationshipType
     var dateAdded: Date
     var photoData: Data?
+    /// Backend UUID, populated after first successful sync.
+    var backendId: String?
 
     @Relationship(deleteRule: .cascade)
     var interactions: [Interaction] = []

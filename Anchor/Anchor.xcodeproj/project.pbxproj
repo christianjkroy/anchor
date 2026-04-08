@@ -44,6 +44,9 @@
 		AB00000C0000000000000000 /* GraphPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA00000C0000000000000000 /* GraphPlaceholderView.swift */; };
 		AB00000D0000000000000000 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00000D0000000000000000 /* Assets.xcassets */; };
 		AB00000E0000000000000000 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA00000E0000000000000000 /* Preview Assets.xcassets */; };
+		AB0301000000000000000000 /* SpeechRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0301000000000000000000 /* SpeechRecognizer.swift */; };
+		AB0302000000000000000000 /* PerceptionCheckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0302000000000000000000 /* PerceptionCheckView.swift */; };
+		AB0303000000000000000000 /* AnchorAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0303000000000000000000 /* AnchorAPIService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -84,6 +87,9 @@
 		AA00000C0000000000000000 /* GraphPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GraphPlaceholderView.swift; sourceTree = "<group>"; };
 		AA00000D0000000000000000 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA00000E0000000000000000 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		AA0301000000000000000000 /* SpeechRecognizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechRecognizer.swift; sourceTree = "<group>"; };
+		AA0302000000000000000000 /* PerceptionCheckView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerceptionCheckView.swift; sourceTree = "<group>"; };
+		AA0303000000000000000000 /* AnchorAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnchorAPIService.swift; sourceTree = "<group>"; };
 		B20000010000000000000000 /* Anchor.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Anchor.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -150,6 +156,7 @@
 				AC0B06000000000000000000 /* Digests */,
 				AC0B07000000000000000000 /* Onboarding */,
 				AC0B08000000000000000000 /* Settings */,
+				AC0B0A000000000000000000 /* PerceptionCheck */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -210,10 +217,12 @@
 		AC0B01000000000000000000 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				
+
 				AC0B02000000000000000000 /* Claude */,
 				AC0B03000000000000000000 /* Notifications */,
 				AC0B04000000000000000000 /* Supabase */,
+				AC0B09000000000000000000 /* Speech */,
+				AC0B0B000000000000000000 /* APISync */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -288,6 +297,34 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
+
+		AC0B09000000000000000000 /* Speech */ = {
+			isa = PBXGroup;
+			children = (
+								AA0301000000000000000000 /* SpeechRecognizer.swift */,
+			);
+			path = Speech;
+			sourceTree = "<group>";
+		};
+
+		AC0B0A000000000000000000 /* PerceptionCheck */ = {
+			isa = PBXGroup;
+			children = (
+								AA0302000000000000000000 /* PerceptionCheckView.swift */,
+			);
+			path = PerceptionCheck;
+			sourceTree = "<group>";
+		};
+
+		AC0B0B000000000000000000 /* APISync */ = {
+			isa = PBXGroup;
+			children = (
+								AA0303000000000000000000 /* AnchorAPIService.swift */,
+			);
+			path = APISync;
+			sourceTree = "<group>";
+		};
+
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -394,6 +431,9 @@
 				AB0214000000000000000000 /* OnboardingView.swift in Sources */,
 				AB0215000000000000000000 /* SettingsView.swift in Sources */,
 				AB0220000000000000000000 /* PreviewData.swift in Sources */,
+				AB0301000000000000000000 /* SpeechRecognizer.swift in Sources */,
+				AB0302000000000000000000 /* PerceptionCheckView.swift in Sources */,
+				AB0303000000000000000000 /* AnchorAPIService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -527,6 +567,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Anchor;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anchor uses your microphone to dictate interaction notes.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Anchor uses speech recognition to transcribe your interaction notes on-device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -555,6 +597,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Anchor;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anchor uses your microphone to dictate interaction notes.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Anchor uses speech recognition to transcribe your interaction notes on-device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

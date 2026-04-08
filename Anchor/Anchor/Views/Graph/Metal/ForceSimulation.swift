@@ -143,7 +143,7 @@ private struct QuadTree {
         switch content {
         case .empty:
             return .zero
-        case .leaf(let idx, let pos, let mass):
+        case .leaf(_, let pos, let mass):
             // Skip self
             if simd_distance(pos, node.position) < 0.01 { return .zero }
             return force(from: pos, mass: mass, to: node.position, strength: strength)

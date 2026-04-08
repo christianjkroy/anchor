@@ -34,73 +34,90 @@ struct GraphTabView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .bottom) {
-                GeometryReader { geo in
-                    RelationshipGraphView(
-                        viewModel: viewModel,
-                        onNodeTapped: { id in
-                            selectedPersonID = id
-                            navigateToDetail = true
-                        },
-                        onNodeLongPressed: { id, point in
-                            popoverPersonID = id
-                            popoverAnchorPoint = point
-                            showPopover = true
-                        }
-                    )
-                    .ignoresSafeArea()
-                    .onAppear {
-                        viewModel.setViewSize(geo.size)
-                        viewModel.rebuild(people: people)
-                    }
-                    .onChange(of: people.count) { _, _ in
-                        viewModel.rebuild(people: people)
-                    }
-                    .onChange(of: dateRangeStart) { _, newStart in
-                        viewModel.dateRange = newStart...Date.now
-                        viewModel.rebuild(people: people)
-                    }
-                }
-
-                // Date range filter
-                VStack(spacing: 0) {
-                    DateRangeSlider(start: $dateRangeStart)
-                        .padding(.horizontal)
-                        .padding(.vertical, 12)
-                        .background(.ultraThinMaterial)
-                }
-            }
-            .navigationTitle("Relationships")
-            .navigationBarTitleDisplayMode(.inline)
-            .overlay(alignment: .center) {
-                if people.isEmpty {
-                    VStack(spacing: 12) {
+            Group {
+                if !RelationshipGraphView.isMetalAvailable {
+                    VStack(spacing: 16) {
                         Image(systemName: "point.3.connected.trianglepath.dotted")
-                            .font(.largeTitle)
+                            .font(.system(size: 56))
                             .foregroundStyle(AnchorColors.secure.opacity(0.5))
-                        Text("Add people and log interactions to see your relationship graph.")
+                        Text("Graph requires a physical device")
+                            .font(.headline)
+                        Text("Metal GPU rendering isn't available on this simulator. Run on an iPhone to see the live graph.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 40)
                     }
+                } else {
+                    ZStack(alignment: .bottom) {
+                        GeometryReader { geo in
+                            RelationshipGraphView(
+                                viewModel: viewModel,
+                                onNodeTapped: { id in
+                                    popoverPersonID = id
+                                    popoverAnchorPoint = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
+                                    showPopover = true
+                                },
+                                onNodeLongPressed: { id, point in
+                                    selectedPersonID = id
+                                    navigateToDetail = true
+                                }
+                            )
+                            .ignoresSafeArea()
+                            .onAppear {
+                                viewModel.setViewSize(geo.size)
+                                viewModel.rebuild(people: people)
+                            }
+                            .onChange(of: people.count) { _, _ in
+                                viewModel.rebuild(people: people)
+                            }
+                            .onChange(of: dateRangeStart) { _, newStart in
+                                viewModel.dateRange = newStart...Date.now
+                                viewModel.rebuild(people: people)
+                            }
+                        }
+
+                        VStack(spacing: 0) {
+                            DateRangeSlider(start: $dateRangeStart)
+                                .padding(.horizontal)
+                                .padding(.vertical, 12)
+                                .background(.ultraThinMaterial)
+                        }
+                    }
+                    .overlay(alignment: .center) {
+                        if people.isEmpty {
+                            VStack(spacing: 12) {
+                                Image(systemName: "point.3.connected.trianglepath.dotted")
+                                    .font(.largeTitle)
+                                    .foregroundStyle(AnchorColors.secure.opacity(0.5))
+                                Text("Add people and log interactions to see your relationship graph.")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 40)
+                            }
+                        }
+                    }
+                    .overlay {
+                        if showPopover, let person = popoverPerson {
+                            NodePopover(person: person, anchorPoint: popoverAnchorPoint) {
+                                showPopover = false
+                            }
+                        }
+                    }
                 }
             }
+            .navigationTitle("Relationships")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: $navigateToDetail) {
                 if let person = selectedPerson {
                     PersonDetailView(person: person)
                 }
             }
-            .overlay {
-                if showPopover, let person = popoverPerson {
-                    NodePopover(person: person, anchorPoint: popoverAnchorPoint) {
-                        showPopover = false
-                    }
-                }
-            }
         }
     }
 }
+
 
 // MARK: - Node Popover
 
@@ -191,4 +208,9 @@ struct DateRangeSlider: View {
             }
         }
     }
+}
+
+#Preview {
+    GraphPlaceholderView()
+        .modelContainer(PreviewData.container())
 }

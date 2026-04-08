@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB0220000000000000000000 /* PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0220000000000000000000 /* PreviewData.swift */; };
 		AB0201000000000000000000 /* ClaudeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0201000000000000000000 /* ClaudeModels.swift */; };
 		AB0202000000000000000000 /* ClaudePrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0202000000000000000000 /* ClaudePrompts.swift */; };
 		AB0203000000000000000000 /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0203000000000000000000 /* ClaudeService.swift */; };
@@ -46,6 +47,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		AA0220000000000000000000 /* PreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewData.swift; sourceTree = "<group>"; };
 		AA0201000000000000000000 /* ClaudeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeModels.swift; sourceTree = "<group>"; };
 		AA0202000000000000000000 /* ClaudePrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudePrompts.swift; sourceTree = "<group>"; };
 		AA0203000000000000000000 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
@@ -198,6 +200,7 @@
 			isa = PBXGroup;
 			children = (
 				AA00000E0000000000000000 /* Preview Assets.xcassets */,
+				AA0220000000000000000000 /* PreviewData.swift */,
 			);
 			name = "Preview Content";
 			path = "Preview Content";
@@ -390,6 +393,7 @@
 				AB0213000000000000000000 /* DigestDetailView.swift in Sources */,
 				AB0214000000000000000000 /* OnboardingView.swift in Sources */,
 				AB0215000000000000000000 /* SettingsView.swift in Sources */,
+				AB0220000000000000000000 /* PreviewData.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

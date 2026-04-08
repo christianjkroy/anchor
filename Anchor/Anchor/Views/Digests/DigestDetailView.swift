@@ -182,3 +182,12 @@ private struct InitiationChangeRow: View {
         )
     }
 }
+
+#Preview {
+    let container = PreviewData.container()
+    let digest = PreviewData.digest(in: container)
+    return NavigationStack {
+        DigestDetailView(digest: digest)
+    }
+    .modelContainer(container)
+}

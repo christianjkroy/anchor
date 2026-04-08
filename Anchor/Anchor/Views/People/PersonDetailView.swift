@@ -33,7 +33,7 @@ struct PersonDetailView: View {
                     PatternsSection(
                         patterns: patterns,
                         isLoading: isDetectingPatterns,
-                        canDetect: person.interactions.count >= 4 && ClaudeService.hasAPIKey(),
+                        canDetect: person.interactions.count >= 4,
                         onDetect: { Task { await detectPatterns() } }
                     )
                     .padding()
@@ -316,7 +316,7 @@ private struct PatternsSection: View {
             }
 
             if patterns.isEmpty && !isLoading {
-                Text(canDetect ? "Tap Detect to analyze your interaction history." : "Log at least 4 interactions and add an API key to detect patterns.")
+                Text(canDetect ? "Tap Detect to analyze your interaction history." : "Log at least 4 interactions to detect patterns.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
@@ -375,4 +375,13 @@ private struct PersonPatternRow: View {
             }
         }
     }
+}
+
+#Preview {
+    let container = PreviewData.container()
+    let person = PreviewData.person(in: container)
+    return NavigationStack {
+        PersonDetailView(person: person)
+    }
+    .modelContainer(container)
 }

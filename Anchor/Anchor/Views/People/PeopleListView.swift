@@ -18,26 +18,37 @@ struct PeopleListView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
+                Color(.systemGroupedBackground).ignoresSafeArea()
+
                 if displayedPeople.isEmpty && searchText.isEmpty {
-                    ContentUnavailableView {
-                        Label("No People Yet", systemImage: "person.2")
-                    } description: {
-                        Text("Tap + to add someone and start tracking your interactions.")
-                    } actions: {
-                        Button("Add Person") { showAddPerson = true }
-                            .buttonStyle(.borderedProminent)
-                    }
+                    emptyState
                 } else {
-                    List {
-                        ForEach(displayedPeople) { person in
-                            NavigationLink(destination: PersonDetailView(person: person)) {
-                                PersonRowView(person: person)
+                    ScrollView {
+                        LazyVStack(spacing: 10) {
+                            ForEach(displayedPeople) { person in
+                                NavigationLink(destination: PersonDetailView(person: person)) {
+                                    PersonRowView(person: person)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .fill(Color(.secondarySystemGroupedBackground))
+                                                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        modelContext.delete(person)
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
-                        .onDelete(perform: deletePeople)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 20)
                     }
-                    .listStyle(.plain)
                 }
             }
             .navigationTitle("Anchor")
@@ -47,9 +58,14 @@ struct PeopleListView: View {
                     Button {
                         showAddPerson = true
                     } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title3)
-                            .foregroundStyle(AnchorColors.secure)
+                        ZStack {
+                            Circle()
+                                .fill(AnchorColors.secure)
+                                .frame(width: 32, height: 32)
+                            Image(systemName: "plus")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
                     }
                 }
             }
@@ -59,9 +75,42 @@ struct PeopleListView: View {
         }
     }
 
-    private func deletePeople(at offsets: IndexSet) {
-        for index in offsets {
-            modelContext.delete(displayedPeople[index])
+    private var emptyState: some View {
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(AnchorColors.secure.opacity(0.12))
+                    .frame(width: 80, height: 80)
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 30))
+                    .foregroundStyle(AnchorColors.secure)
+            }
+            VStack(spacing: 8) {
+                Text("No People Yet")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                Text("Add someone to start tracking your interactions and relationship patterns.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+            Button {
+                showAddPerson = true
+            } label: {
+                Label("Add Person", systemImage: "plus")
+                    .font(.headline)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 12)
+                    .background(AnchorColors.secure)
+                    .foregroundStyle(.white)
+                    .clipShape(Capsule())
+            }
         }
     }
+}
+
+#Preview {
+    PeopleListView()
+        .modelContainer(PreviewData.container())
 }

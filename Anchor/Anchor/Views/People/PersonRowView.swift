@@ -4,47 +4,61 @@ struct PersonRowView: View {
     let person: Person
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .center, spacing: 10) {
-                AvatarView(person: person, size: 40)
+        HStack(spacing: 0) {
+            // Left accent bar
+            RoundedRectangle(cornerRadius: 3)
+                .fill(person.dominantSentiment?.color ?? person.relationshipType.color)
+                .frame(width: 4)
+                .padding(.vertical, 12)
+                .padding(.leading, 12)
 
-                VStack(alignment: .leading, spacing: 3) {
+            HStack(alignment: .center, spacing: 13) {
+                AvatarView(person: person, size: 50)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(person.name)
+                        .font(.headline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+
                     HStack(spacing: 6) {
-                        Text(person.name)
-                            .font(.body)
-                            .fontWeight(.medium)
-
                         RelationshipPill(type: person.relationshipType)
-                    }
-
-                    HStack(spacing: 4) {
                         if let days = person.daysSinceLastInteraction {
-                            Text(days == 0 ? "Today" : "\(days)d ago")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Text("No interactions yet")
-                                .font(.caption)
+                            Text(days == 0 ? "today" : "\(days)d ago")
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                         }
-
-                        Text("·")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-
-                        Text("\(person.totalInteractions) interaction\(person.totalInteractions == 1 ? "" : "s")")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
+
+                    InitiationRatioBar(ratio: person.initiationRatio, height: 3, showLabels: false)
+                        .frame(maxWidth: 120)
                 }
 
                 Spacer()
-            }
 
-            InitiationRatioBar(ratio: person.initiationRatio, height: 5, showLabels: false)
-                .padding(.leading, 50)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(person.totalInteractions)")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(AnchorColors.secure)
+                    Text("interactions")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    if let sentiment = person.dominantSentiment {
+                        Text(sentiment.rawValue)
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(sentiment.color.opacity(0.15)))
+                            .foregroundStyle(sentiment.color)
+                    }
+                }
+                .padding(.trailing, 14)
+            }
+            .padding(.vertical, 13)
+            .padding(.leading, 11)
         }
-        .padding(.vertical, 4)
     }
 }
 
@@ -93,4 +107,13 @@ struct RelationshipPill: View {
             )
             .foregroundStyle(type.color)
     }
+}
+
+#Preview {
+    let container = PreviewData.container()
+    let person = PreviewData.person(in: container)
+    return List {
+        PersonRowView(person: person)
+    }
+    .modelContainer(container)
 }

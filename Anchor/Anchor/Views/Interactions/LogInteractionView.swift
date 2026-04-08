@@ -14,6 +14,8 @@ struct LogInteractionView: View {
     @State private var locationContext: LocationContext? = nil
     @State private var note = ""
     @State private var durationText = ""
+    @State private var micPermissionGranted = false
+    @StateObject private var speech = SpeechRecognizer()
 
     private let noteLimit = 500
 
@@ -48,34 +50,66 @@ struct LogInteractionView: View {
                                         selection: $locationContext)
 
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("Note (optional)")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.secondary)
+                        HStack {
+                            Text("Note (optional)")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            // Voice input button
+                            Button {
+                                Task { await toggleVoice() }
+                            } label: {
+                                Image(systemName: speech.isRecording ? "stop.circle.fill" : "mic.circle")
+                                    .font(.title3)
+                                    .foregroundStyle(speech.isRecording ? AnchorColors.anxious : AnchorColors.secure)
+                                    .symbolEffect(.pulse, isActive: speech.isRecording)
+                            }
+                            .accessibilityLabel(speech.isRecording ? "Stop recording" : "Dictate note")
+                        }
 
                         ZStack(alignment: .topLeading) {
-                            if note.isEmpty {
+                            if note.isEmpty && !speech.isRecording {
                                 Text("What happened? How did it feel?")
                                     .foregroundStyle(Color(.placeholderText))
                                     .padding(8)
                                     .allowsHitTesting(false)
                             }
-                            TextEditor(text: $note)
-                                .frame(minHeight: 80)
-                                .onChange(of: note) { _, new in
-                                    if new.count > noteLimit {
-                                        note = String(new.prefix(noteLimit))
+                            if speech.isRecording {
+                                Text(speech.transcript.isEmpty ? "Listening…" : speech.transcript)
+                                    .foregroundStyle(speech.transcript.isEmpty ? Color(.placeholderText) : .primary)
+                                    .padding(8)
+                                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                            } else {
+                                TextEditor(text: $note)
+                                    .frame(minHeight: 80)
+                                    .onChange(of: note) { _, new in
+                                        if new.count > noteLimit {
+                                            note = String(new.prefix(noteLimit))
+                                        }
                                     }
-                                }
+                            }
                         }
                         .font(.body)
                         .padding(4)
+                        .frame(minHeight: 80)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(Color(.systemGray6))
+                                .fill(speech.isRecording
+                                      ? AnchorColors.anxious.opacity(0.06)
+                                      : Color(.systemGray6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .strokeBorder(speech.isRecording ? AnchorColors.anxious.opacity(0.4) : .clear, lineWidth: 1)
+                                )
                         )
 
                         HStack {
+                            if let err = speech.errorMessage {
+                                Text(err)
+                                    .font(.caption2)
+                                    .foregroundStyle(AnchorColors.anxious)
+                            }
                             Spacer()
                             Text("\(note.count)/\(noteLimit)")
                                 .font(.caption2)
@@ -108,6 +142,7 @@ struct LogInteractionView: View {
             }
             .navigationTitle("Log Interaction")
             .navigationBarTitleDisplayMode(.inline)
+            .onDisappear { speech.stopRecording() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -117,6 +152,28 @@ struct LogInteractionView: View {
                         .fontWeight(.semibold)
                 }
             }
+        }
+    }
+
+    private func toggleVoice() async {
+        if speech.isRecording {
+            speech.stopRecording()
+            // Append transcript to note
+            let transcribed = speech.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !transcribed.isEmpty {
+                note = note.isEmpty ? transcribed : note + " " + transcribed
+                speech.transcript = ""
+            }
+        } else {
+            if !micPermissionGranted {
+                micPermissionGranted = await speech.requestPermission()
+                guard micPermissionGranted else {
+                    speech.errorMessage = "Microphone or speech access denied. Enable in Settings."
+                    return
+                }
+            }
+            speech.transcript = ""
+            speech.startRecording()
         }
     }
 
@@ -137,10 +194,15 @@ struct LogInteractionView: View {
         dismiss()
 
         // Classify sentiment asynchronously after save
-        if !note.isEmpty && ClaudeService.hasAPIKey() {
-            Task {
-                try? await ClaudeService.shared.classifyPendingSentiments(for: person, context: modelContext)
-            }
+        Task {
+            try? await ClaudeService.shared.classifyPendingSentiments(for: person, context: modelContext)
         }
     }
+}
+
+#Preview {
+    let container = PreviewData.container()
+    let person = PreviewData.person(in: container)
+    return LogInteractionView(person: person)
+        .modelContainer(container)
 }

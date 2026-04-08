@@ -52,3 +52,7 @@ struct InitiationRatioBar: View {
         }
     }
 }
+
+#Preview("Balanced") { InitiationRatioBar(ratio: 0.5).padding() }
+#Preview("You initiate most") { InitiationRatioBar(ratio: 0.8).padding() }
+#Preview("They initiate most") { InitiationRatioBar(ratio: 0.2).padding() }

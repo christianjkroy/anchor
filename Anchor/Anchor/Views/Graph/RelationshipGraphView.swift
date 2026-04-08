@@ -7,9 +7,16 @@ struct RelationshipGraphView: UIViewRepresentable {
     var onNodeTapped: (PersistentIdentifier) -> Void
     var onNodeLongPressed: (PersistentIdentifier, CGPoint) -> Void
 
+    static var isMetalAvailable: Bool {
+        MTLCreateSystemDefaultDevice() != nil
+    }
+
     func makeUIView(context: Context) -> MTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
-            return MTKView()
+            // Metal unavailable (e.g. some simulators) — return inert view
+            let fallback = MTKView()
+            fallback.backgroundColor = UIColor.systemBackground
+            return fallback
         }
 
         let mtkView = MTKView(frame: .zero, device: device)
@@ -43,11 +50,7 @@ struct RelationshipGraphView: UIViewRepresentable {
         return mtkView
     }
 
-    func updateUIView(_ uiView: MTKView, context: Context) {
-        if let bgColor = UIColor.systemBackground.resolvedColor(with: uiView.traitCollection).cgColor.components {
-            uiView.clearColor = MTLClearColor(red: bgColor[0], green: bgColor[1], blue: bgColor[2], alpha: 1)
-        }
-    }
+    func updateUIView(_ uiView: MTKView, context: Context) {}
 
     func makeCoordinator() -> Coordinator {
         Coordinator(viewModel: viewModel, onNodeTapped: onNodeTapped, onNodeLongPressed: onNodeLongPressed)
@@ -113,7 +116,9 @@ struct RelationshipGraphView: UIViewRepresentable {
             case .began:
                 basePanOffset = renderer?.panOffset ?? .zero
             case .changed:
-                renderer?.panOffset = basePanOffset + SIMD2<Float>(Float(translation.x), Float(translation.y))
+                let newOffset = basePanOffset + SIMD2<Float>(Float(translation.x), Float(translation.y))
+                renderer?.panOffset = newOffset
+                viewModel.panOffset = newOffset
             default:
                 break
             }
@@ -122,7 +127,9 @@ struct RelationshipGraphView: UIViewRepresentable {
         @objc func handlePinch(_ recognizer: UIPinchGestureRecognizer) {
             guard recognizer.state == .changed else { return }
             let current = renderer?.zoomScale ?? 1.0
-            renderer?.zoomScale = max(0.3, min(3.0, current * Float(recognizer.scale)))
+            let newScale = max(0.3, min(3.0, current * Float(recognizer.scale)))
+            renderer?.zoomScale = newScale
+            viewModel.zoomScale = newScale
             recognizer.scale = 1.0
         }
     }

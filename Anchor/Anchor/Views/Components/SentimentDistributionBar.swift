@@ -68,3 +68,12 @@ private struct LegendDot: View {
         }
     }
 }
+
+#Preview("With data") {
+    SentimentDistributionBar(anxious: 0.4, secure: 0.45, avoidant: 0.15)
+        .padding()
+}
+#Preview("No data") {
+    SentimentDistributionBar(anxious: 0, secure: 0, avoidant: 0)
+        .padding()
+}

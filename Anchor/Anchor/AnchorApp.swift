@@ -9,7 +9,7 @@ struct AnchorApp: App {
     @AppStorage("lastDigestTimestamp") private var lastDigestTimestamp: Double = 0
 
     private let container: ModelContainer = {
-        try! ModelContainer(for: Person.self, Interaction.self, Pattern.self, WeeklyDigest.self)
+        try! ModelContainer(for: Person.self, Interaction.self, Pattern.self, WeeklyDigest.self, PerceptionCheck.self)
     }()
 
     var body: some Scene {
@@ -24,7 +24,7 @@ struct AnchorApp: App {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
                 Task {
-                    await DigestNotificationService.requestAuthorization()
+                    _ = await DigestNotificationService.requestAuthorization()
                     await checkAndGenerateDigest()
                 }
             }
@@ -33,7 +33,6 @@ struct AnchorApp: App {
 
     @MainActor
     private func checkAndGenerateDigest() async {
-        guard ClaudeService.hasAPIKey() else { return }
         let last = lastDigestTimestamp == 0 ? nil : Date(timeIntervalSince1970: lastDigestTimestamp)
         guard shouldGenerateDigest(lastDate: last) else { return }
 
@@ -64,9 +63,10 @@ struct AnchorApp: App {
     }
 
     private func shouldGenerateDigest(lastDate: Date?) -> Bool {
+        let isSunday = Calendar.current.component(.weekday, from: .now) == 1
+        guard isSunday else { return false }
         guard let last = lastDate else { return true }
         let days = Calendar.current.dateComponents([.day], from: last, to: .now).day ?? 0
-        let isSunday = Calendar.current.component(.weekday, from: .now) == 1
-        return days >= 7 && isSunday
+        return days >= 7
     }
 }

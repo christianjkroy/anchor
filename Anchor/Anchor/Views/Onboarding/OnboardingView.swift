@@ -12,7 +12,6 @@ struct OnboardingView: View {
         }
         .tabViewStyle(.page)
         .indexViewStyle(.page(backgroundDisplayMode: .always))
-        .ignoresSafeArea()
     }
 }
 
@@ -173,6 +172,8 @@ private struct OnboardingPage3: View {
                     .padding(.horizontal, 32)
             }
 
+            Spacer()
+
             Button {
                 HapticFeedback.success()
                 isComplete = true
@@ -188,8 +189,7 @@ private struct OnboardingPage3: View {
             }
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 20)
-
-            Spacer()
+            .padding(.bottom, 48)
         }
         .padding()
         .onAppear {
@@ -198,4 +198,9 @@ private struct OnboardingPage3: View {
             }
         }
     }
+}
+
+#Preview {
+    @Previewable @State var done = false
+    OnboardingView(isComplete: $done)
 }

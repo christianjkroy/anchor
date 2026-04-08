@@ -82,6 +82,7 @@ struct AddPersonView: View {
             person.photoData = photo.jpegData(compressionQuality: 0.8)
         }
         modelContext.insert(person)
+        try? modelContext.save()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         dismiss()
     }
@@ -113,4 +114,9 @@ struct ImagePicker: UIViewControllerRepresentable {
             parent.dismiss()
         }
     }
+}
+
+#Preview {
+    AddPersonView()
+        .modelContainer(PreviewData.container())
 }

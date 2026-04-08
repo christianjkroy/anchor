@@ -13,14 +13,33 @@ struct DigestListView: View {
                 if digests.isEmpty {
                     emptyState
                 } else {
-                    List {
-                        ForEach(digests) { digest in
-                            NavigationLink(destination: DigestDetailView(digest: digest)) {
-                                DigestRowView(digest: digest)
+                    ScrollView {
+                        LazyVStack(spacing: 10) {
+                            ForEach(digests) { digest in
+                                NavigationLink(destination: DigestDetailView(digest: digest)) {
+                                    DigestRowView(digest: digest)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 16)
+                                                .fill(Color(.secondarySystemGroupedBackground))
+                                                .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        modelContext.delete(digest)
+                                        try? modelContext.save()
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                        .padding(.bottom, 20)
                     }
-                    .listStyle(.plain)
+                    .background(Color(.systemGroupedBackground))
                 }
             }
             .navigationTitle("Digests")
@@ -70,10 +89,6 @@ struct DigestListView: View {
     }
 
     private func generateDigest() async {
-        guard ClaudeService.hasAPIKey() else {
-            errorMessage = "No API key set. Add your Anthropic key in Settings."
-            return
-        }
         isGenerating = true
         defer { isGenerating = false }
 
@@ -110,6 +125,13 @@ struct DigestListView: View {
             errorMessage = error.localizedDescription
         }
     }
+
+    private func deleteDigests(at offsets: IndexSet) {
+        for index in offsets {
+            modelContext.delete(digests[index])
+        }
+        try? modelContext.save()
+    }
 }
 
 private struct DigestRowView: View {
@@ -117,28 +139,51 @@ private struct DigestRowView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            if !digest.isRead {
-                Circle()
-                    .fill(AnchorColors.secure)
-                    .frame(width: 8, height: 8)
-                    .padding(.top, 6)
-            } else {
-                Spacer().frame(width: 8)
+            VStack(alignment: .center, spacing: 6) {
+                ZStack {
+                    Circle()
+                        .fill(AnchorColors.secure.opacity(0.15))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "chart.bar.doc.horizontal")
+                        .font(.system(size: 18))
+                        .foregroundStyle(AnchorColors.secure)
+                }
+                if !digest.isRead {
+                    Circle()
+                        .fill(AnchorColors.secure)
+                        .frame(width: 6, height: 6)
+                }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(digest.weekDateRangeString)
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                Text(digest.narrativeParagraph.prefix(100) + "…")
+
+                Text(digest.narrativeParagraph.prefix(120) + "…")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                Text("\(digest.patterns.count) pattern\(digest.patterns.count == 1 ? "" : "s") detected")
-                    .font(.caption2)
-                    .foregroundStyle(AnchorColors.secure)
+                    .lineLimit(3)
+                    .lineSpacing(2)
+
+                HStack(spacing: 10) {
+                    Label("\(digest.patterns.count) pattern\(digest.patterns.count == 1 ? "" : "s")", systemImage: "waveform.path.ecg")
+                        .font(.caption2)
+                        .foregroundStyle(AnchorColors.secure)
+
+                    if !digest.initiationChanges.isEmpty {
+                        Label("\(digest.initiationChanges.count) shift\(digest.initiationChanges.count == 1 ? "" : "s")", systemImage: "arrow.left.arrow.right")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
         }
-        .padding(.vertical, 4)
+        .padding(14)
     }
+}
+
+#Preview {
+    DigestListView()
+        .modelContainer(PreviewData.container())
 }

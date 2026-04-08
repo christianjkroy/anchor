@@ -30,9 +30,11 @@ final class GraphViewModel {
     var hoveredPersonID: PersistentIdentifier? = nil
     var dateRange: ClosedRange<Date> = Date.distantPast...Date.now
     var isPaused: Bool = false
+    var panOffset: SIMD2<Float> = .zero
+    var zoomScale: Float = 1.0
 
     private var simulation = ForceSimulation()
-    private var viewSize: CGSize = .init(width: 390, height: 700)
+    var viewSize: CGSize = .init(width: 390, height: 700)
 
     // MARK: - Build from SwiftData
 
@@ -45,10 +47,10 @@ final class GraphViewModel {
             let count = person.interactions.filter {
                 $0.timestamp >= dateRange.lowerBound && $0.timestamp <= dateRange.upperBound
             }.count
-            let radius = Float(max(14, min(38, 10 + sqrt(Double(count)) * 6)))
-            let color = colorForPerson(person)
+            let radius = Float(max(50, min(95, 30 + sqrt(Double(count)) * 14)))
+            let color = colorForIndex(idx)
             let angle = Float(idx) / Float(max(filtered.count, 1)) * 2 * .pi
-            let spread: Float = 150
+            let spread: Float = 180
             let position = SIMD2<Float>(
                 Float(viewSize.width / 2) + spread * cos(angle),
                 Float(viewSize.height / 2) + spread * sin(angle)
@@ -110,19 +112,20 @@ final class GraphViewModel {
 
     // MARK: - Color helpers
 
-    private func colorForPerson(_ person: Person) -> SIMD4<Float> {
-        switch person.dominantSentiment {
-        case .secure:   return SIMD4<Float>(0.47, 0.78, 0.74, 1)
-        case .anxious:  return SIMD4<Float>(0.93, 0.60, 0.57, 1)
-        case .avoidant: return SIMD4<Float>(0.72, 0.72, 0.74, 1)
-        case nil:
-            switch person.relationshipType {
-            case .closeFriend: return SIMD4<Float>(0.35, 0.68, 0.64, 1)
-            case .romantic:    return SIMD4<Float>(0.93, 0.60, 0.57, 1)
-            case .family:      return SIMD4<Float>(0.65, 0.82, 0.93, 1)
-            case .friend:      return SIMD4<Float>(0.47, 0.78, 0.74, 1)
-            case .acquaintance: return SIMD4<Float>(0.72, 0.72, 0.74, 1)
-            }
-        }
+    private static let nodePalette: [SIMD4<Float>] = [
+        SIMD4<Float>(0.25, 0.72, 0.68, 1), // teal
+        SIMD4<Float>(0.94, 0.38, 0.38, 1), // red
+        SIMD4<Float>(0.58, 0.34, 0.92, 1), // violet
+        SIMD4<Float>(0.98, 0.62, 0.12, 1), // amber
+        SIMD4<Float>(0.22, 0.54, 0.97, 1), // blue
+        SIMD4<Float>(0.22, 0.80, 0.46, 1), // green
+        SIMD4<Float>(0.97, 0.35, 0.72, 1), // pink
+        SIMD4<Float>(0.98, 0.82, 0.12, 1), // yellow
+        SIMD4<Float>(0.12, 0.78, 0.90, 1), // cyan
+        SIMD4<Float>(0.96, 0.50, 0.25, 1), // orange
+    ]
+
+    private func colorForIndex(_ idx: Int) -> SIMD4<Float> {
+        Self.nodePalette[idx % Self.nodePalette.count]
     }
 }

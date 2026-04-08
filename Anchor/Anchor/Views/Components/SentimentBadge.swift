@@ -34,3 +34,13 @@ struct SentimentBadge: View {
         }
     }
 }
+
+#Preview {
+    VStack(spacing: 12) {
+        SentimentBadge(label: .secure, confidence: 0.91)
+        SentimentBadge(label: .anxious, confidence: 0.76)
+        SentimentBadge(label: .avoidant, confidence: 0.63)
+        SentimentBadge(label: .secure, confidence: 0.88, showConfidence: true)
+    }
+    .padding()
+}

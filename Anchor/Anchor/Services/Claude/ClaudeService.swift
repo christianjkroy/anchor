@@ -1,108 +1,46 @@
 import Foundation
-import Security
 import SwiftData
+import FoundationModels
 
+/// Sentiment and pattern analysis runs on-device using rule-based logic.
+/// Digest narrative uses Apple Foundation Models (iOS 26+) with a template fallback.
 actor ClaudeService {
     static let shared = ClaudeService()
-
-    private let baseURL = URL(string: "https://api.anthropic.com/v1/messages")!
-    private let session = URLSession.shared
-    private let sentimentModel = "claude-haiku-4-5-20251001"
-    private let digestModel = "claude-opus-4-6"
-
-    // MARK: - API Key (Keychain)
-
-    private static let keychainKey = "com.anchor.claude-api-key"
-
-    static func saveAPIKey(_ key: String) {
-        let data = key.data(using: .utf8)!
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: keychainKey,
-            kSecValueData as String: data
-        ]
-        SecItemDelete(query as CFDictionary)
-        SecItemAdd(query as CFDictionary, nil)
-    }
-
-    static func loadAPIKey() -> String? {
-        let query: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: keychainKey,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne
-        ]
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
-    }
-
-    static func hasAPIKey() -> Bool {
-        loadAPIKey() != nil
-    }
 
     // MARK: - Sentiment Classification
 
     func classifySentiment(for interaction: Interaction) async throws -> (SentimentLabel, Double) {
-        guard !interaction.note.isEmpty else {
-            throw ClaudeError.emptyNote
-        }
-        let prompt = ClaudePrompts.sentimentClassification(
-            note: interaction.note,
-            feelingBefore: interaction.feelingBefore.rawValue,
-            feelingDuring: interaction.feelingDuring.rawValue,
-            feelingAfter: interaction.feelingAfter.rawValue
+        return Self.deriveSentiment(
+            before: interaction.feelingBefore,
+            during: interaction.feelingDuring,
+            after: interaction.feelingAfter
         )
-        let text = try await send(prompt: prompt, model: sentimentModel, maxTokens: 150)
-        let result = try parseJSON(SentimentResult.self, from: text)
-        return (result.label, result.confidence)
     }
 
     func classifyPendingSentiments(for person: Person, context: ModelContext) async throws {
-        let unlabeled = person.interactions.filter { $0.sentimentLabel == nil && !$0.note.isEmpty }
+        let unlabeled = person.interactions.filter { $0.sentimentLabel == nil }
         for interaction in unlabeled {
-            do {
-                let (label, confidence) = try await classifySentiment(for: interaction)
-                interaction.sentimentLabel = label
-                interaction.sentimentConfidence = confidence
-                try? context.save()
-            } catch ClaudeError.emptyNote {
-                continue
-            } catch {
-                // Don't propagate partial failures — skip this interaction
-                continue
-            }
+            let (label, confidence) = Self.deriveSentiment(
+                before: interaction.feelingBefore,
+                during: interaction.feelingDuring,
+                after: interaction.feelingAfter
+            )
+            interaction.sentimentLabel = label
+            interaction.sentimentConfidence = confidence
         }
+        try? context.save()
     }
 
     // MARK: - Pattern Detection
 
     func detectPatterns(for person: Person) async throws -> [PatternResult] {
         guard person.interactions.count >= 4 else { return [] }
-
-        let df = ISO8601DateFormatter()
-        let summaries = person.interactions.map { i in
-            ClaudePrompts.InteractionSummary(
-                timestamp: df.string(from: i.timestamp),
-                interactionType: i.interactionType.rawValue,
-                initiator: i.initiator.rawValue,
-                feelingBefore: i.feelingBefore.rawValue,
-                feelingDuring: i.feelingDuring.rawValue,
-                feelingAfter: i.feelingAfter.rawValue,
-                locationContext: i.locationContext?.rawValue,
-                sentimentLabel: i.sentimentLabel?.rawValue,
-                notePreview: String(i.note.prefix(100))
-            )
-        }
-
-        let prompt = ClaudePrompts.patternAnalysis(
-            personName: person.name,
-            relationshipType: person.relationshipType.rawValue,
-            history: summaries
-        )
-        let text = try await send(prompt: prompt, model: digestModel, maxTokens: 800)
-        return try parseJSON([PatternResult].self, from: text)
+        var results: [PatternResult] = []
+        if let p = Self.checkInitiationImbalance(person) { results.append(p) }
+        if let p = Self.checkSentimentDrift(person)      { results.append(p) }
+        if let p = Self.checkContextBehavior(person)     { results.append(p) }
+        if let p = Self.checkPerceptionMismatch(person)  { results.append(p) }
+        return results
     }
 
     // MARK: - Weekly Digest
@@ -110,127 +48,307 @@ actor ClaudeService {
     func generateWeeklyDigest(people: [Person]) async throws -> DigestResult {
         let now = Date()
         let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: now)!
-        let sixtyDaysAgo = Calendar.current.date(byAdding: .day, value: -60, to: now)!
+        let sixtyDaysAgo  = Calendar.current.date(byAdding: .day, value: -60, to: now)!
 
-        let active = people.filter { p in
-            p.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count >= 3
+        let active = people.filter {
+            !$0.interactions.filter { $0.timestamp >= thirtyDaysAgo }.isEmpty
         }
-        guard !active.isEmpty else { throw ClaudeError.insufficientData }
+        guard !active.isEmpty else { throw AIError.insufficientData }
 
-        let summaries = active.map { person -> ClaudePrompts.PersonWeeklySummary in
+        var allPatterns: [PatternResult] = []
+        for person in active {
+            allPatterns.append(contentsOf: try await detectPatterns(for: person))
+        }
+        let topPatterns = Array(allPatterns.sorted { $0.severityRank > $1.severityRank }.prefix(3))
+
+        let initiationChanges: [InitiationChange] = active.compactMap { person in
             let recent = person.interactions.filter { $0.timestamp >= thirtyDaysAgo }
-            let prev = person.interactions.filter { $0.timestamp >= sixtyDaysAgo && $0.timestamp < thirtyDaysAgo }
-
-            let prevRatio: Double? = prev.isEmpty ? nil : {
-                let meaningful = prev.filter { $0.initiator != .unclear }
-                guard !meaningful.isEmpty else { return 0.5 }
-                return Double(meaningful.filter { $0.initiator == .you }.count) / Double(meaningful.count)
-            }()
-
-            let dist = person.sentimentDistribution
-
-            return ClaudePrompts.PersonWeeklySummary(
-                name: person.name,
-                relationshipType: person.relationshipType.rawValue,
-                interactionCount: recent.count,
-                initiationRatioCurrent: person.initiationRatio,
-                initiationRatioPrevious: prevRatio,
-                sentimentDistribution: .init(anxious: dist.anxious, secure: dist.secure, avoidant: dist.avoidant),
-                topFeelingAfter: person.mostCommonFeelingAfter?.rawValue,
-                daysSinceLastInteraction: person.daysSinceLastInteraction
-            )
+            let prev   = person.interactions.filter { $0.timestamp >= sixtyDaysAgo && $0.timestamp < thirtyDaysAgo }
+            guard !recent.isEmpty else { return nil }
+            func ratio(_ list: [Interaction]) -> Double {
+                let m = list.filter { $0.initiator != .unclear }
+                guard !m.isEmpty else { return 0.5 }
+                return Double(m.filter { $0.initiator == .you }.count) / Double(m.count)
+            }
+            return InitiationChange(personName: person.name, previousRatio: prev.isEmpty ? ratio(recent) : ratio(prev), currentRatio: ratio(recent))
         }
+        .sorted { abs($0.delta) > abs($1.delta) }
+        .prefix(5).map { $0 }
 
-        let df = DateFormatter()
-        df.dateStyle = .medium
-        let weekStart = df.string(from: thirtyDaysAgo)
-        let weekEnd = df.string(from: now)
+        let narrative = await Self.buildNarrative(people: active, thirtyDaysAgo: thirtyDaysAgo, now: now, patterns: topPatterns, initiationChanges: initiationChanges)
 
-        let prompt = ClaudePrompts.weeklyDigest(summaries: summaries, weekStart: weekStart, weekEnd: weekEnd)
-        let text = try await send(prompt: prompt, model: digestModel, maxTokens: 1200)
-        return try parseJSON(DigestResult.self, from: text)
+        return DigestResult(narrative: narrative, patterns: topPatterns, initiationChanges: initiationChanges)
     }
 
-    // MARK: - Core HTTP
+    // MARK: - Core: Sentiment Derivation
 
-    private func send(prompt: String, model: String, maxTokens: Int, retries: Int = 3) async throws -> String {
-        guard let apiKey = ClaudeService.loadAPIKey() else {
-            throw ClaudeError.noAPIKey
+    static func deriveSentiment(
+        before: FeelingBefore,
+        during: FeelingDuring,
+        after: FeelingAfter
+    ) -> (SentimentLabel, Double) {
+        var anxious = 0, secure = 0, avoidant = 0
+
+        switch before {
+        case .anxious:  anxious  += 1
+        case .avoidant: avoidant += 1
+        case .excited:  secure   += 1
+        case .neutral:  break
         }
 
-        let request = ClaudeRequest(
-            model: model,
-            maxTokens: maxTokens,
-            system: "You are a precise data analyzer. Always respond with valid JSON only, no markdown fences, no prose.",
-            messages: [ClaudeMessage(role: "user", content: prompt)]
-        )
+        switch during {
+        case .connected, .secure, .authentic: secure   += 2
+        case .anxious:                        anxious  += 2
+        case .disconnected, .performative:    avoidant += 2
+        }
 
-        var urlRequest = URLRequest(url: baseURL)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue(apiKey, forHTTPHeaderField: "x-api-key")
-        urlRequest.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        urlRequest.httpBody = try JSONEncoder().encode(request)
+        switch after {
+        case .energized, .satisfied: secure   += 3
+        case .calm:                  secure   += 2
+        case .anxious, .regretful:   anxious  += 3
+        case .drained:               avoidant += 3
+        }
 
-        for attempt in 0..<retries {
-            let (data, response) = try await session.data(for: urlRequest)
-            let httpResponse = response as! HTTPURLResponse
+        let total = Double(anxious + secure + avoidant)
+        let label: SentimentLabel
+        let winnerScore: Int
 
-            switch httpResponse.statusCode {
-            case 200:
-                let decoded = try JSONDecoder().decode(ClaudeResponse.self, from: data)
-                return decoded.content.first(where: { $0.type == "text" })?.text ?? ""
-            case 429:
-                let delay = UInt64(pow(2.0, Double(attempt))) * 1_000_000_000
-                try await Task.sleep(nanoseconds: delay)
-            default:
-                throw ClaudeError.invalidResponse(httpResponse.statusCode)
+        if secure >= anxious && secure >= avoidant {
+            label = .secure;   winnerScore = secure
+        } else if anxious >= avoidant {
+            label = .anxious;  winnerScore = anxious
+        } else {
+            label = .avoidant; winnerScore = avoidant
+        }
+
+        let confidence = total > 0 ? min(0.95, max(0.5, Double(winnerScore) / total)) : 0.6
+        return (label, confidence)
+    }
+
+    // MARK: - Core: Pattern Rules
+
+    private static func checkInitiationImbalance(_ person: Person) -> PatternResult? {
+        let meaningful = person.interactions.filter { $0.initiator != .unclear }
+        guard meaningful.count >= 4 else { return nil }
+        let youRatio = Double(meaningful.filter { $0.initiator == .you }.count) / Double(meaningful.count)
+        if youRatio > 0.70 {
+            let pct = Int(youRatio * 100)
+            return PatternResult(type: .initiationImbalance, summary: "You initiate \(pct)% of contact", detail: "You've started \(pct)% of your interactions with \(person.name). This level of imbalance can feel exhausting over time and may be worth noticing.", severity: youRatio > 0.85 ? .high : .medium)
+        } else if youRatio < 0.30 {
+            let pct = Int((1 - youRatio) * 100)
+            return PatternResult(type: .initiationImbalance, summary: "\(person.name) initiates \(pct)% of contact", detail: "\(person.name) reaches out far more often than you do. This may reflect scheduling, interest asymmetry, or a dynamic worth reflecting on.", severity: youRatio < 0.15 ? .high : .medium)
+        }
+        return nil
+    }
+
+    private static func checkSentimentDrift(_ person: Person) -> PatternResult? {
+        let now = Date()
+        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: now)!
+        let sixtyDaysAgo  = Calendar.current.date(byAdding: .day, value: -60, to: now)!
+        let recent = person.interactions.filter { $0.timestamp >= thirtyDaysAgo && $0.sentimentLabel != nil }
+        let prev   = person.interactions.filter { $0.timestamp >= sixtyDaysAgo && $0.timestamp < thirtyDaysAgo && $0.sentimentLabel != nil }
+        guard recent.count >= 3, prev.count >= 3 else { return nil }
+        func anxiousRatio(_ l: [Interaction]) -> Double { Double(l.filter { $0.sentimentLabel == .anxious }.count) / Double(l.count) }
+        func secureRatio(_ l: [Interaction])  -> Double { Double(l.filter { $0.sentimentLabel == .secure  }.count) / Double(l.count) }
+        let anxiousDelta = anxiousRatio(recent) - anxiousRatio(prev)
+        let secureDelta  = secureRatio(recent)  - secureRatio(prev)
+        if anxiousDelta > 0.30 {
+            return PatternResult(type: .sentimentDrift, summary: "Anxiety rising with \(person.name)", detail: "Your last 30 days with \(person.name) show significantly more anxious interactions than the 30 days before. Something may have shifted in this dynamic recently.", severity: anxiousDelta > 0.50 ? .high : .medium)
+        } else if secureDelta > 0.30 {
+            return PatternResult(type: .sentimentDrift, summary: "Growing security with \(person.name)", detail: "Your recent interactions with \(person.name) have trended more secure compared to the prior period. This relationship appears to be strengthening.", severity: .low)
+        } else if secureDelta < -0.30 {
+            return PatternResult(type: .sentimentDrift, summary: "Security declining with \(person.name)", detail: "Your recent interactions with \(person.name) feel less secure than they did a month ago. Worth checking in on what's changed.", severity: abs(secureDelta) > 0.50 ? .high : .medium)
+        }
+        return nil
+    }
+
+    private static func checkContextBehavior(_ person: Person) -> PatternResult? {
+        let oneOnOne = person.interactions.filter { $0.locationContext == .oneOnOne }
+        let group    = person.interactions.filter { $0.locationContext == .smallGroup || $0.locationContext == .largeGroup }
+        guard oneOnOne.count >= 3, group.count >= 3 else { return nil }
+        func secureScore(_ l: [Interaction]) -> Double { Double(l.filter { $0.sentimentLabel == .secure }.count) / Double(l.count) }
+        let delta = secureScore(oneOnOne) - secureScore(group)
+        if delta > 0.35 {
+            return PatternResult(type: .contextDependentBehavior, summary: "Much better one-on-one with \(person.name)", detail: "You feel noticeably more secure with \(person.name) in one-on-one settings versus groups. The dynamic changes significantly depending on who else is around.", severity: delta > 0.55 ? .high : .medium)
+        } else if delta < -0.35 {
+            return PatternResult(type: .contextDependentBehavior, summary: "Better with \(person.name) in groups", detail: "Your interactions with \(person.name) feel more secure in group settings than one-on-one. The presence of others seems to ease this relationship.", severity: abs(delta) > 0.55 ? .high : .medium)
+        }
+        return nil
+    }
+
+    private static func checkPerceptionMismatch(_ person: Person) -> PatternResult? {
+        guard person.interactions.count >= 4 else { return nil }
+        let mismatches = person.interactions.filter { i in
+            i.feelingBefore == .anxious && (i.feelingDuring == .connected || i.feelingDuring == .secure || i.feelingDuring == .authentic)
+        }
+        let ratio = Double(mismatches.count) / Double(person.interactions.count)
+        guard ratio >= 0.30 else { return nil }
+        let pct = Int(ratio * 100)
+        return PatternResult(type: .perceptionMismatch, summary: "Pre-interaction anxiety doesn't match reality with \(person.name)", detail: "In \(pct)% of interactions, you felt anxious beforehand but connected or secure during. Your anticipatory anxiety about \(person.name) may not reflect how these encounters actually go.", severity: ratio >= 0.50 ? .high : .medium)
+    }
+
+    // MARK: - Core: Narrative Builder (Foundation Models → template fallback)
+
+    private static func buildNarrative(
+        people: [Person],
+        thirtyDaysAgo: Date,
+        now: Date,
+        patterns: [PatternResult],
+        initiationChanges: [InitiationChange]
+    ) async -> String {
+        let context = buildNarrativeContext(people: people, thirtyDaysAgo: thirtyDaysAgo, now: now, patterns: patterns, initiationChanges: initiationChanges)
+
+        if #available(iOS 26.0, *) {
+            if let result = try? await generateWithFoundationModels(context: context) {
+                return result
             }
         }
-        throw ClaudeError.rateLimited
+        return templateNarrative(people: people, thirtyDaysAgo: thirtyDaysAgo, now: now)
     }
 
-    // MARK: - JSON Parsing
+    @available(iOS 26.0, *)
+    private static func generateWithFoundationModels(context: String) async throws -> String {
+        let session = LanguageModelSession()
+        let prompt = """
+        You're writing a personal relationship digest for someone who tracks their social life. \
+        Below is raw data about their interactions over the past 30 days. \
+        Write 4–5 sentences that read like a thoughtful friend reflecting on their social patterns — \
+        honest, specific, warm but direct. Cover each person mentioned. \
+        Notice what's working, what might be draining them, and any patterns worth paying attention to. \
+        Don't list stats mechanically. Don't sound like a bot. Don't use bullet points or headers. \
+        Just write naturally, as if you know them.
 
-    private func parseJSON<T: Decodable>(_ type: T.Type, from text: String) throws -> T {
-        // Strip markdown code fences if present
-        var clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        if clean.hasPrefix("```") {
-            clean = clean
-                .components(separatedBy: "\n")
-                .dropFirst()
-                .dropLast()
-                .joined(separator: "\n")
+        \(context)
+        """
+        let response = try await session.respond(to: prompt)
+        return response.content
+    }
+
+    private static func buildNarrativeContext(
+        people: [Person],
+        thirtyDaysAgo: Date,
+        now: Date,
+        patterns: [PatternResult],
+        initiationChanges: [InitiationChange]
+    ) -> String {
+        let df = DateFormatter(); df.dateStyle = .medium
+        var lines = ["Period: \(df.string(from: thirtyDaysAgo)) – \(df.string(from: now))"]
+
+        // Per-person breakdown
+        let sorted = people.sorted { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count > $1.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count }
+        for person in sorted {
+            let recentCount = person.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count
+            let sentiment = person.dominantSentiment?.rawValue.lowercased() ?? "unclear"
+            let initiatorPct = Int(person.initiationRatio * 100)
+            let lastSeen = person.daysSinceLastInteraction.map { $0 == 0 ? "today" : "\($0) days ago" } ?? "unknown"
+            let feelingAfter = person.mostCommonFeelingAfter?.rawValue.lowercased() ?? "varies"
+            lines.append("- \(person.name): \(recentCount) interaction\(recentCount == 1 ? "" : "s"), tone mostly \(sentiment), you initiated \(initiatorPct)%, usually feel \(feelingAfter) after, last contact \(lastSeen)")
         }
-        guard let data = clean.data(using: .utf8) else {
-            throw ClaudeError.decodingFailure("Could not convert text to data")
+
+        // Top patterns
+        if !patterns.isEmpty {
+            lines.append("Patterns: " + patterns.map { $0.summary }.joined(separator: "; "))
         }
-        do {
-            return try JSONDecoder().decode(type, from: data)
-        } catch {
-            throw ClaudeError.decodingFailure(error.localizedDescription)
+
+        // Notable initiation shifts
+        let bigShifts = initiationChanges.filter { abs($0.delta) > 0.12 }
+        if !bigShifts.isEmpty {
+            lines.append("Initiation shifts: " + bigShifts.map { "\($0.personName) went from \(Int($0.previousRatio*100))% to \(Int($0.currentRatio*100))% you-initiated" }.joined(separator: "; "))
         }
+
+        return lines.joined(separator: "\n")
+    }
+
+    private static func templateNarrative(people: [Person], thirtyDaysAgo: Date, now: Date) -> String {
+        let sorted = people.sorted { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count > $1.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count }
+        let mostActive = sorted.first!
+        let activeCount = mostActive.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count
+        let allRecent = people.flatMap { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo } }
+        let secureCount  = allRecent.filter { $0.sentimentLabel == .secure  }.count
+        let anxiousCount = allRecent.filter { $0.sentimentLabel == .anxious }.count
+        let seed = allRecent.count + people.count
+
+        // Build per-person notes for everyone
+        var personNotes: [String] = []
+        for person in sorted {
+            let count = person.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count
+            let feeling = person.mostCommonFeelingAfter
+            let initPct = Int(person.initiationRatio * 100)
+            let tone = person.dominantSentiment
+
+            var note = "\(person.name)"
+            if count == 1 {
+                note += " popped up once"
+            } else {
+                note += " came up \(count) times"
+            }
+            if let f = feeling {
+                let feelingPhrases: [FeelingAfter: [String]] = [
+                    .calm:      ["leaving you feeling calm", "usually leaving you settled"],
+                    .energized: ["which tends to energize you", "leaving you with more energy"],
+                    .drained:   ["though it often leaves you drained", "which has been draining"],
+                    .anxious:   ["with a lingering anxious edge", "leaving some anxiety behind"],
+                    .satisfied: ["and generally feeling satisfied", "with a sense of satisfaction"],
+                    .regretful: ["with some regret afterward", "leaving you second-guessing things"]
+                ]
+                if let phrases = feelingPhrases[f], !phrases.isEmpty {
+                    note += ", " + phrases[seed % phrases.count]
+                }
+            }
+            if initPct > 72 {
+                note += " — you're driving most of that contact"
+            } else if initPct < 28 {
+                note += " — they're the one reaching out"
+            }
+            if let t = tone, t == .anxious {
+                note += " (the dynamic feels a bit anxious)"
+            }
+            personNotes.append(note)
+        }
+
+        // Overall tone sentence
+        let overallTone: String
+        if secureCount > anxiousCount * 2 {
+            let opts = ["Your social world felt relatively steady this month.", "The general vibe has been solid — more grounded than not.", "Things have been feeling pretty secure across the board."]
+            overallTone = opts[seed % opts.count]
+        } else if anxiousCount > secureCount {
+            let opts = ["There's been an anxious thread running through a lot of this.", "More of these interactions left you unsettled than at ease — worth paying attention to.", "The anxiety signal is coming through clearly this period."]
+            overallTone = opts[seed % opts.count]
+        } else {
+            let opts = ["The emotional range here is pretty varied — which makes sense given the mix of people.", "No single tone is dominating, which might mean you're navigating a lot of different dynamics at once.", "Things feel mixed — not great, not bad, just a lot happening."]
+            overallTone = opts[seed % opts.count]
+        }
+
+        let joined: String
+        if personNotes.count == 1 {
+            joined = personNotes[0] + "."
+        } else if personNotes.count == 2 {
+            joined = personNotes[0] + ", while " + personNotes[1].prefix(1).lowercased() + personNotes[1].dropFirst() + "."
+        } else {
+            let last = personNotes.last!
+            let rest = personNotes.dropLast().joined(separator: "; ")
+            joined = rest + "; and " + last.prefix(1).lowercased() + last.dropFirst() + "."
+        }
+
+        return "\(overallTone) \(joined)"
     }
 
     // MARK: - Errors
 
-    enum ClaudeError: LocalizedError {
-        case noAPIKey
-        case emptyNote
+    enum AIError: LocalizedError {
         case insufficientData
-        case invalidResponse(Int)
-        case decodingFailure(String)
-        case rateLimited
-
         var errorDescription: String? {
-            switch self {
-            case .noAPIKey: return "No API key set. Add your Anthropic API key in Settings."
-            case .emptyNote: return "Note is empty."
-            case .insufficientData: return "Not enough data to generate a digest."
-            case .invalidResponse(let code): return "API returned status \(code)."
-            case .decodingFailure(let msg): return "Could not parse response: \(msg)"
-            case .rateLimited: return "Rate limited. Try again in a moment."
-            }
+            "Not enough data to generate a digest. Log at least 3 interactions with someone first."
+        }
+    }
+}
+
+private extension PatternResult {
+    var severityRank: Int {
+        switch severity {
+        case .high:   return 3
+        case .medium: return 2
+        case .low:    return 1
         }
     }
 }

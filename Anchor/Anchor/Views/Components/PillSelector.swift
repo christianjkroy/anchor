@@ -99,3 +99,13 @@ struct PillButton: View {
         .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 }
+
+#Preview {
+    @Previewable @State var feeling: FeelingAfter = .calm
+    @Previewable @State var optional: LocationContext? = nil
+    VStack(spacing: 24) {
+        PillSelector(title: "How did you feel after?", selection: $feeling, pillColor: { $0.color })
+        OptionalPillSelector(title: "Context (optional)", selection: $optional)
+    }
+    .padding()
+}

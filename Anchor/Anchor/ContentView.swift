@@ -18,11 +18,23 @@ struct ContentView: View {
                     Label("Digests", systemImage: "chart.bar.doc.horizontal")
                 }
 
+            PerceptionCheckView()
+                .tabItem {
+                    Label("Check", systemImage: "brain.head.profile")
+                }
+
             SettingsView()
                 .tabItem {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
         }
         .tint(AnchorColors.secure)
+        .onAppear {
+            let appearance = UITabBarAppearance()
+            appearance.configureWithOpaqueBackground()
+            appearance.backgroundColor = UIColor.systemBackground
+            UITabBar.appearance().standardAppearance = appearance
+            UITabBar.appearance().scrollEdgeAppearance = appearance
+        }
     }
 }

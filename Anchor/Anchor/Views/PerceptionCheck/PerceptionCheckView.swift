@@ -17,30 +17,26 @@ struct PerceptionCheckView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Header explanation
                     headerCard
 
-                    // Person picker
                     personPicker
 
-                    // Score selector
                     if selectedPerson != nil {
                         scoreSelector
                         checkButton
                     }
 
-                    // Result
                     if let result {
                         resultCard(result)
                     }
 
-                    // History
                     if !history.isEmpty {
                         historySection
                     }
                 }
                 .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Perception Check")
             .navigationBarTitleDisplayMode(.large)
             .onChange(of: selectedPerson) { _, person in
@@ -59,24 +55,35 @@ struct PerceptionCheckView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(AnchorColors.secure)
 
-            Text("Rate how you feel about a relationship. We'll compare your gut score to what your interaction data actually shows.")
+            Text("Start with your gut, then compare it against the interaction history you’ve actually logged.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding()
         .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(AnchorColors.secure.opacity(0.08))
-                .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(AnchorColors.secure.opacity(0.2), lineWidth: 1))
+            RoundedRectangle(cornerRadius: 18)
+                .fill(
+                    LinearGradient(
+                        colors: [AnchorColors.secure.opacity(0.12), AnchorColors.neutral.opacity(0.12)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(RoundedRectangle(cornerRadius: 18).strokeBorder(AnchorColors.secure.opacity(0.18), lineWidth: 1))
         )
     }
 
     private var personPicker: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Who are you thinking about?")
-                .font(.subheadline)
-                .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Who are you checking in on?")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Text("Pick one person and rate the relationship as it feels to you right now.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -109,13 +116,23 @@ struct PerceptionCheckView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
     }
 
     private var scoreSelector: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("How do you feel about this relationship?")
-                .font(.subheadline)
-                .fontWeight(.semibold)
+            VStack(alignment: .leading, spacing: 3) {
+                Text("How does this relationship feel right now?")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Text("1 means shaky and uneasy. 5 means grounded and strong.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             HStack(spacing: 0) {
                 Text("Uncertain")
@@ -156,6 +173,11 @@ struct PerceptionCheckView: View {
                 }
             }
         }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
     }
 
     private var checkButton: some View {
@@ -166,14 +188,26 @@ struct PerceptionCheckView: View {
                 ProgressView().tint(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AnchorColors.secure)
+                    .background(
+                        LinearGradient(
+                            colors: [AnchorColors.secure, AnchorColors.neutral],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                     .clipShape(RoundedRectangle(cornerRadius: 14))
             } else {
                 Label("Run Perception Check", systemImage: "magnifyingglass")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AnchorColors.secure)
+                    .background(
+                        LinearGradient(
+                            colors: [AnchorColors.secure, AnchorColors.neutral],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
             }
@@ -238,7 +272,7 @@ struct PerceptionCheckView: View {
         }
         .padding()
         .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
     }
 
     private var historySection: some View {

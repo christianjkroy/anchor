@@ -15,20 +15,10 @@ struct PersonDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                // Header
+            VStack(alignment: .leading, spacing: 18) {
                 PersonHeaderView(person: person)
-                    .padding()
-
-                Divider()
-
-                // Stats bar
                 StatsBarView(person: person)
-                    .padding()
 
-                Divider()
-
-                // Patterns section
                 if !patterns.isEmpty || person.interactions.count >= 4 {
                     PatternsSection(
                         patterns: patterns,
@@ -36,36 +26,49 @@ struct PersonDetailView: View {
                         canDetect: person.interactions.count >= 4,
                         onDetect: { Task { await detectPatterns() } }
                     )
-                    .padding()
-
-                    Divider()
                 }
 
-                // Interactions list
-                if sortedInteractions.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "bubble.left.and.bubble.right")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-                        Text("No interactions yet")
-                            .foregroundStyle(.secondary)
-                        Text("Tap below to log your first one")
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Interaction Timeline")
+                            .font(.headline)
+                        Spacer()
+                        Text("\(sortedInteractions.count)")
                             .font(.caption)
-                            .foregroundStyle(Color(.tertiaryLabel))
+                            .fontWeight(.semibold)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(AnchorColors.secure.opacity(0.12)))
+                            .foregroundStyle(AnchorColors.secure)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 48)
-                } else {
-                    VStack(spacing: 0) {
-                        ForEach(sortedInteractions) { interaction in
-                            InteractionRowView(interaction: interaction)
-                            Divider()
-                                .padding(.leading, 16)
+
+                    if sortedInteractions.isEmpty {
+                        VStack(spacing: 12) {
+                            Image(systemName: "bubble.left.and.bubble.right")
+                                .font(.system(size: 28, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            Text("No interactions yet")
+                                .font(.headline)
+                            Text("Log the first interaction to start building a clearer picture of this relationship.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 36)
+                    } else {
+                        VStack(spacing: 10) {
+                            ForEach(sortedInteractions) { interaction in
+                                InteractionRowView(interaction: interaction)
+                            }
                         }
                     }
                 }
+                .detailSectionCard()
             }
+            .padding(16)
         }
+        .background(Color(.systemGroupedBackground))
         .safeAreaInset(edge: .bottom) {
             Button {
                 showLogInteraction = true
@@ -74,7 +77,13 @@ struct PersonDetailView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AnchorColors.secure)
+                    .background(
+                        LinearGradient(
+                            colors: [AnchorColors.secure, AnchorColors.neutral],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal)
@@ -132,17 +141,60 @@ private struct PersonHeaderView: View {
     let person: Person
 
     var body: some View {
-        HStack(spacing: 16) {
-            AvatarView(person: person, size: 64)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 16) {
+                AvatarView(person: person, size: 68)
 
-            VStack(alignment: .leading, spacing: 4) {
-                RelationshipPill(type: person.relationshipType)
-                Text("Added \(person.dateAdded.formatted(date: .abbreviated, time: .omitted))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    RelationshipPill(type: person.relationshipType)
+                    Text(person.name)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                    Text(summaryLine)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
             }
-            Spacer()
+
+            HStack(spacing: 10) {
+                headerBadge(title: "Added", value: person.dateAdded.formatted(date: .abbreviated, time: .omitted))
+                if let days = person.daysSinceLastInteraction {
+                    headerBadge(title: "Last seen", value: days == 0 ? "Today" : "\(days)d ago")
+                }
+            }
         }
+        .padding(18)
+        .background(
+            LinearGradient(
+                colors: [Color(.secondarySystemGroupedBackground), AnchorColors.secure.opacity(0.14)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+    }
+
+    private var summaryLine: String {
+        if let sentiment = person.dominantSentiment {
+            return "Mostly \(sentiment.rawValue.lowercased()) interactions across \(person.totalInteractions) logged moments."
+        }
+        return "\(person.totalInteractions) logged interaction\(person.totalInteractions == 1 ? "" : "s") so far."
+    }
+
+    private func headerBadge(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.caption)
+                .fontWeight(.semibold)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(.white.opacity(0.55), in: RoundedRectangle(cornerRadius: 12))
     }
 }
 
@@ -153,7 +205,7 @@ private struct StatsBarView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 24) {
+            HStack(spacing: 12) {
                 StatCell(label: "Interactions", value: "\(person.totalInteractions)")
 
                 if let days = person.daysSinceLastInteraction {
@@ -190,6 +242,7 @@ private struct StatsBarView: View {
                 avoidant: dist.avoidant
             )
         }
+        .detailSectionCard()
     }
 }
 
@@ -298,21 +351,32 @@ private struct PatternsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Patterns")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    onDetect()
-                } label: {
-                    if isLoading {
-                        ProgressView().tint(AnchorColors.secure)
-                    } else {
-                        Label(patterns.isEmpty ? "Detect" : "Refresh", systemImage: "wand.and.stars")
-                            .font(.caption)
-                            .foregroundStyle(AnchorColors.secure)
-                    }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Patterns")
+                        .font(.headline)
+                    Text("Signals pulled from repeated interaction history")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .disabled(!canDetect || isLoading)
+                Spacer()
+                if canDetect {
+                    Button {
+                        onDetect()
+                    } label: {
+                        if isLoading {
+                            ProgressView().tint(AnchorColors.secure)
+                        } else {
+                            Label(patterns.isEmpty ? "Analyze" : "Refresh", systemImage: "wand.and.stars")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .background(Capsule().fill(AnchorColors.secure.opacity(0.12)))
+                                .foregroundStyle(AnchorColors.secure)
+                        }
+                    }
+                    .disabled(isLoading)
+                }
             }
 
             if patterns.isEmpty && !isLoading {
@@ -325,6 +389,7 @@ private struct PatternsSection: View {
                 }
             }
         }
+        .detailSectionCard()
     }
 }
 
@@ -374,6 +439,17 @@ private struct PersonPatternRow: View {
                 expanded.toggle()
             }
         }
+    }
+}
+
+private extension View {
+    func detailSectionCard() -> some View {
+        self
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            )
     }
 }
 

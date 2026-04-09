@@ -23,123 +23,134 @@ struct LogInteractionView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    loggingIntroCard
 
-                    PillSelector(title: "How did you interact?",
-                                 selection: $interactionType)
+                    formCard(title: "Interaction Basics", subtitle: "Capture what happened and who carried the momentum.") {
+                        PillSelector(title: "How did you interact?",
+                                     selection: $interactionType)
 
-                    PillSelector(title: "Who initiated?",
-                                 selection: $initiator)
+                        PillSelector(title: "Who initiated?",
+                                     selection: $initiator)
+                    }
 
-                    Divider()
+                    formCard(title: "Emotional Arc", subtitle: "Describe the emotional shift from before to after.") {
+                        PillSelector(title: "How did you feel before?",
+                                     selection: $feelingBefore,
+                                     pillColor: { $0.color })
 
-                    PillSelector(title: "How did you feel before?",
-                                 selection: $feelingBefore,
-                                 pillColor: { $0.color })
+                        PillSelector(title: "How did you feel during?",
+                                     selection: $feelingDuring,
+                                     pillColor: { $0.color })
 
-                    PillSelector(title: "How did you feel during?",
-                                 selection: $feelingDuring,
-                                 pillColor: { $0.color })
+                        PillSelector(title: "How did you feel after?",
+                                     selection: $feelingAfter,
+                                     pillColor: { $0.color })
+                    }
 
-                    PillSelector(title: "How did you feel after?",
-                                 selection: $feelingAfter,
-                                 pillColor: { $0.color })
+                    formCard(title: "Context", subtitle: "Add optional detail if it helps explain the dynamic.") {
+                        OptionalPillSelector(title: "Setting",
+                                            selection: $locationContext)
 
-                    Divider()
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack {
+                                Text("Reflection")
+                                    .font(.caption)
+                                    .fontWeight(.medium)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Button {
+                                    Task { await toggleVoice() }
+                                } label: {
+                                    Label(speech.isRecording ? "Stop" : "Dictate", systemImage: speech.isRecording ? "stop.circle.fill" : "mic.circle")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(Capsule().fill((speech.isRecording ? AnchorColors.anxious : AnchorColors.secure).opacity(0.12)))
+                                        .foregroundStyle(speech.isRecording ? AnchorColors.anxious : AnchorColors.secure)
+                                        .symbolEffect(.pulse, isActive: speech.isRecording)
+                                }
+                                .accessibilityLabel(speech.isRecording ? "Stop recording" : "Dictate note")
+                            }
 
-                    OptionalPillSelector(title: "Context (optional)",
-                                        selection: $locationContext)
+                            ZStack(alignment: .topLeading) {
+                                if note.isEmpty && !speech.isRecording {
+                                    Text("What stood out? What did you notice about the energy, effort, or vibe?")
+                                        .foregroundStyle(Color(.placeholderText))
+                                        .padding(8)
+                                        .allowsHitTesting(false)
+                                }
+                                if speech.isRecording {
+                                    Text(speech.transcript.isEmpty ? "Listening…" : speech.transcript)
+                                        .foregroundStyle(speech.transcript.isEmpty ? Color(.placeholderText) : .primary)
+                                        .padding(8)
+                                        .frame(maxWidth: .infinity, alignment: .topLeading)
+                                } else {
+                                    TextEditor(text: $note)
+                                        .frame(minHeight: 110)
+                                        .onChange(of: note) { _, new in
+                                            if new.count > noteLimit {
+                                                note = String(new.prefix(noteLimit))
+                                            }
+                                        }
+                                }
+                            }
+                            .font(.body)
+                            .padding(4)
+                            .frame(minHeight: 110)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(speech.isRecording
+                                          ? AnchorColors.anxious.opacity(0.06)
+                                          : Color(.systemGray6))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .strokeBorder(speech.isRecording ? AnchorColors.anxious.opacity(0.4) : Color.clear, lineWidth: 1)
+                                    )
+                            )
 
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Note (optional)")
+                            HStack {
+                                if let err = speech.errorMessage {
+                                    Text(err)
+                                        .font(.caption2)
+                                        .foregroundStyle(AnchorColors.anxious)
+                                } else {
+                                    Text("Notes help the weekly digest and pattern detection feel sharper.")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text("\(note.count)/\(noteLimit)")
+                                    .font(.caption2)
+                                    .foregroundStyle(note.count > noteLimit - 50 ? AnchorColors.anxious : .secondary)
+                            }
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Duration")
                                 .font(.caption)
                                 .fontWeight(.medium)
                                 .foregroundStyle(.secondary)
-                            Spacer()
-                            // Voice input button
-                            Button {
-                                Task { await toggleVoice() }
-                            } label: {
-                                Image(systemName: speech.isRecording ? "stop.circle.fill" : "mic.circle")
-                                    .font(.title3)
-                                    .foregroundStyle(speech.isRecording ? AnchorColors.anxious : AnchorColors.secure)
-                                    .symbolEffect(.pulse, isActive: speech.isRecording)
-                            }
-                            .accessibilityLabel(speech.isRecording ? "Stop recording" : "Dictate note")
-                        }
 
-                        ZStack(alignment: .topLeading) {
-                            if note.isEmpty && !speech.isRecording {
-                                Text("What happened? How did it feel?")
-                                    .foregroundStyle(Color(.placeholderText))
-                                    .padding(8)
-                                    .allowsHitTesting(false)
+                            HStack {
+                                TextField("Minutes", text: $durationText)
+                                    .keyboardType(.numberPad)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color(.systemGray6))
+                                    )
+                                    .frame(width: 110)
+                                Text("minutes")
+                                    .foregroundStyle(.secondary)
                             }
-                            if speech.isRecording {
-                                Text(speech.transcript.isEmpty ? "Listening…" : speech.transcript)
-                                    .foregroundStyle(speech.transcript.isEmpty ? Color(.placeholderText) : .primary)
-                                    .padding(8)
-                                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                            } else {
-                                TextEditor(text: $note)
-                                    .frame(minHeight: 80)
-                                    .onChange(of: note) { _, new in
-                                        if new.count > noteLimit {
-                                            note = String(new.prefix(noteLimit))
-                                        }
-                                    }
-                            }
-                        }
-                        .font(.body)
-                        .padding(4)
-                        .frame(minHeight: 80)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(speech.isRecording
-                                      ? AnchorColors.anxious.opacity(0.06)
-                                      : Color(.systemGray6))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .strokeBorder(speech.isRecording ? AnchorColors.anxious.opacity(0.4) : .clear, lineWidth: 1)
-                                )
-                        )
-
-                        HStack {
-                            if let err = speech.errorMessage {
-                                Text(err)
-                                    .font(.caption2)
-                                    .foregroundStyle(AnchorColors.anxious)
-                            }
-                            Spacer()
-                            Text("\(note.count)/\(noteLimit)")
-                                .font(.caption2)
-                                .foregroundStyle(note.count > noteLimit - 50 ? AnchorColors.anxious : .secondary)
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Duration (optional)")
-                            .font(.caption)
-                            .fontWeight(.medium)
-                            .foregroundStyle(.secondary)
-
-                        HStack {
-                            TextField("Minutes", text: $durationText)
-                                .keyboardType(.numberPad)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(Color(.systemGray6))
-                                )
-                                .frame(width: 100)
-                            Text("minutes")
-                                .foregroundStyle(.secondary)
                         }
                     }
                 }
                 .padding()
             }
+            .background(Color(.systemGroupedBackground))
             .navigationTitle("Log Interaction")
             .navigationBarTitleDisplayMode(.inline)
             .onDisappear { speech.stopRecording() }
@@ -153,6 +164,43 @@ struct LogInteractionView: View {
                 }
             }
         }
+    }
+
+    private var loggingIntroCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Logging for \(person.name)")
+                .font(.headline)
+            Text("Capture the tone of the interaction while it’s still fresh. The app will use this to track patterns over time.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .background(
+            LinearGradient(
+                colors: [Color(.secondarySystemGroupedBackground), AnchorColors.secure.opacity(0.12)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
+
+    private func formCard<Content: View>(title: String, subtitle: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline)
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            content()
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
     }
 
     private func toggleVoice() async {

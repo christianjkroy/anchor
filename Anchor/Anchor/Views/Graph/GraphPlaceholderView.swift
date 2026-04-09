@@ -50,17 +50,27 @@ struct GraphTabView: View {
                     }
                 } else {
                     ZStack(alignment: .bottom) {
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.97, green: 0.98, blue: 0.98),
+                                Color(red: 0.93, green: 0.97, blue: 0.97)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .ignoresSafeArea()
+
                         GeometryReader { geo in
                             RelationshipGraphView(
                                 viewModel: viewModel,
                                 onNodeTapped: { id in
-                                    popoverPersonID = id
-                                    popoverAnchorPoint = CGPoint(x: geo.size.width / 2, y: geo.size.height / 2)
-                                    showPopover = true
-                                },
-                                onNodeLongPressed: { id, point in
                                     selectedPersonID = id
                                     navigateToDetail = true
+                                },
+                                onNodeLongPressed: { id, point in
+                                    popoverPersonID = id
+                                    popoverAnchorPoint = point
+                                    showPopover = true
                                 }
                             )
                             .ignoresSafeArea()
@@ -78,6 +88,9 @@ struct GraphTabView: View {
                         }
 
                         VStack(spacing: 0) {
+                            GraphLegend(peopleCount: people.count)
+                                .padding(.horizontal)
+                                .padding(.top, 12)
                             DateRangeSlider(start: $dateRangeStart)
                                 .padding(.horizontal)
                                 .padding(.vertical, 12)
@@ -114,6 +127,54 @@ struct GraphTabView: View {
                     PersonDetailView(person: person)
                 }
             }
+            .background(Color(.systemGroupedBackground))
+        }
+    }
+}
+
+private struct GraphLegend: View {
+    let peopleCount: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Relationship Map")
+                        .font(.headline)
+                    Text("Tap a node to open the full profile. Long-press for a quick snapshot.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("\(peopleCount) people")
+                    .font(.caption2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(Capsule().fill(AnchorColors.secure.opacity(0.12)))
+                    .foregroundStyle(AnchorColors.secure)
+            }
+
+            HStack(spacing: 12) {
+                legendItem(color: AnchorColors.secure, label: "Secure")
+                legendItem(color: AnchorColors.anxious, label: "Anxious")
+                legendItem(color: AnchorColors.avoidant, label: "Avoidant")
+                legendItem(color: AnchorColors.neutral, label: "No sentiment yet")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func legendItem(color: Color, label: String) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -147,6 +208,10 @@ private struct NodePopover: View {
                 if let days = person.daysSinceLastInteraction {
                     popoverStat(label: "Last seen", value: days == 0 ? "Today" : "\(days)d ago")
                 }
+
+                Text("Long-press gives you a quick summary. Tap opens the full profile.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
             .padding(14)
             .background(
@@ -183,9 +248,16 @@ struct DateRangeSlider: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "calendar")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Date range")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text("Filter the relationship map")
+                    .font(.caption)
+                    .foregroundStyle(.primary)
+            }
+
+            Spacer(minLength: 10)
 
             HStack(spacing: 4) {
                 ForEach(presets.indices, id: \.self) { idx in
@@ -200,13 +272,15 @@ struct DateRangeSlider: View {
                     .padding(.horizontal, 10)
                     .padding(.vertical, 5)
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 10)
                             .fill(selectedPreset == idx ? AnchorColors.secure.opacity(0.2) : Color(.systemGray6))
                     )
                     .foregroundStyle(selectedPreset == idx ? AnchorColors.secure : Color(.label))
                 }
             }
         }
+        .padding(12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18))
     }
 }
 

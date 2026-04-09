@@ -5,10 +5,23 @@ struct OnboardingView: View {
     @State private var currentPage = 0
 
     var body: some View {
-        TabView(selection: $currentPage) {
-            OnboardingPage1().tag(0)
-            OnboardingPage2().tag(1)
-            OnboardingPage3(isComplete: $isComplete).tag(2)
+        ZStack {
+            LinearGradient(
+                colors: [
+                    Color(red: 0.97, green: 0.98, blue: 0.96),
+                    Color(red: 0.92, green: 0.97, blue: 0.96),
+                    Color(red: 0.96, green: 0.95, blue: 0.99)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            TabView(selection: $currentPage) {
+                OnboardingPage1().tag(0)
+                OnboardingPage2().tag(1)
+                OnboardingPage3(isComplete: $isComplete).tag(2)
+            }
         }
         .tabViewStyle(.page)
         .indexViewStyle(.page(backgroundDisplayMode: .always))
@@ -25,24 +38,41 @@ private struct OnboardingPage1: View {
             Spacer()
 
             ZStack {
+                RoundedRectangle(cornerRadius: 36)
+                    .fill(.white.opacity(0.45))
+                    .frame(width: 220, height: 220)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 36)
+                            .strokeBorder(.white.opacity(0.6), lineWidth: 1)
+                    )
                 Circle()
-                    .fill(AnchorColors.secure.opacity(0.15))
-                    .frame(width: 160, height: 160)
+                    .fill(AnchorColors.secure.opacity(0.12))
+                    .frame(width: 170, height: 170)
+                Circle()
+                    .fill(AnchorColors.neutral.opacity(0.15))
+                    .frame(width: 110, height: 110)
+                    .offset(x: 42, y: 36)
                 Image(systemName: "anchor")
-                    .font(.system(size: 72, weight: .thin))
-                    .foregroundStyle(AnchorColors.secure)
+                    .font(.system(size: 76, weight: .thin))
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [AnchorColors.secure, AnchorColors.neutral],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
             }
             .scaleEffect(appeared ? 1 : 0.6)
             .opacity(appeared ? 1 : 0)
 
             VStack(spacing: 12) {
-                Text("Know Your Relationships")
-                    .font(.largeTitle)
+                Text("See your relationships more clearly")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
 
-                Text("You're probably wrong about how your relationships are going. Anchor shows you the data, not the story you've been telling yourself.")
-                    .font(.body)
+                Text("Anchor helps you separate what actually happened from the story anxiety tells you after the fact.")
+                    .font(.title3)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -78,13 +108,13 @@ private struct OnboardingPage2: View {
                 .opacity(appeared ? 1 : 0)
 
             VStack(spacing: 12) {
-                Text("Track in Under 30 Seconds")
-                    .font(.largeTitle)
+                Text("Track a moment while it’s still fresh")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
 
-                Text("Tap how you felt. Add a note if you want. That's it. The patterns emerge on their own.")
-                    .font(.body)
+                Text("Log the interaction, capture the emotional arc, and let the app build the pattern over time.")
+                    .font(.title3)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -116,7 +146,10 @@ private struct OnboardingPage2: View {
                 }
             }
             .padding()
-            .background(RoundedRectangle(cornerRadius: 16).fill(Color(.secondarySystemBackground)))
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(Color(.secondarySystemBackground).opacity(0.92))
+            )
             .padding(.horizontal)
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 30)
@@ -160,13 +193,13 @@ private struct OnboardingPage3: View {
             .opacity(appeared ? 1 : 0)
 
             VStack(spacing: 12) {
-                Text("See the Full Picture")
-                    .font(.largeTitle)
+                Text("Get a fuller read on the dynamic")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
                     .fontWeight(.bold)
                     .multilineTextAlignment(.center)
 
-                Text("Every week, Anchor tells you what's actually true — who you're reaching out to, who's reaching out to you, and whether your feelings match reality.")
-                    .font(.body)
+                Text("Over time, Anchor shows who reaches out, how interactions actually feel, and where your perception matches the data.")
+                    .font(.title3)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 32)
@@ -182,7 +215,13 @@ private struct OnboardingPage3: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(AnchorColors.secure)
+                    .background(
+                        LinearGradient(
+                            colors: [AnchorColors.secure, AnchorColors.neutral],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .padding(.horizontal, 32)

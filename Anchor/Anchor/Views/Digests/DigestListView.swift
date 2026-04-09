@@ -13,13 +13,20 @@ struct DigestListView: View {
                 if digests.isEmpty {
                     emptyState
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 10) {
+                    List {
+                        Section {
+                            digestIntroCard
+                                .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 6, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                        }
+
+                        Section {
                             ForEach(digests) { digest in
                                 NavigationLink(destination: DigestDetailView(digest: digest)) {
                                     DigestRowView(digest: digest)
                                         .background(
-                                            RoundedRectangle(cornerRadius: 16)
+                                            RoundedRectangle(cornerRadius: 18)
                                                 .fill(Color(.secondarySystemGroupedBackground))
                                                 .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 3)
                                         )
@@ -29,16 +36,19 @@ struct DigestListView: View {
                                     Button(role: .destructive) {
                                         modelContext.delete(digest)
                                         try? modelContext.save()
+                                        HapticFeedback.selection()
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
                                 }
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 20)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                     .background(Color(.systemGroupedBackground))
                 }
             }
@@ -67,18 +77,27 @@ struct DigestListView: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "chart.bar.doc.horizontal")
-                .font(.largeTitle)
-                .foregroundStyle(AnchorColors.secure)
-            Text("No Digests Yet")
-                .font(.headline)
-            Text("Digests generate weekly. Log at least 3 interactions with someone to get started.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-            Button("Generate Now") {
+        VStack(spacing: 20) {
+            VStack(spacing: 14) {
+                Image(systemName: "chart.bar.doc.horizontal")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(AnchorColors.secure)
+                Text("No Digests Yet")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                Text("Weekly digests turn your interaction history into a clearer read on what’s getting stronger, shakier, or more one-sided.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
+            }
+            .padding(22)
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(Color(.secondarySystemGroupedBackground))
+            )
+
+            Button("Generate Digest Now") {
                 Task { await generateDigest() }
             }
             .buttonStyle(.borderedProminent)
@@ -86,6 +105,8 @@ struct DigestListView: View {
             .disabled(isGenerating)
         }
         .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemGroupedBackground))
     }
 
     private func generateDigest() async {
@@ -131,6 +152,25 @@ struct DigestListView: View {
             modelContext.delete(digests[index])
         }
         try? modelContext.save()
+    }
+
+    private var digestIntroCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Weekly readout")
+                .font(.headline)
+            Text("Digests summarize the tone of your recent interactions, highlight patterns, and flag shifts in who’s carrying the connection.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(16)
+        .background(
+            LinearGradient(
+                colors: [Color(.secondarySystemGroupedBackground), AnchorColors.secure.opacity(0.12)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 }
 

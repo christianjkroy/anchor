@@ -262,7 +262,6 @@ actor LocalAnalysisService {
     private static func templateNarrative(people: [Person], thirtyDaysAgo: Date, now: Date) -> String {
         let sorted = people.sorted { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count > $1.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count }
         let mostActive = sorted.first!
-        let activeCount = mostActive.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count
         let allRecent = people.flatMap { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo } }
         let secureCount  = allRecent.filter { $0.sentimentLabel == .secure  }.count
         let anxiousCount = allRecent.filter { $0.sentimentLabel == .anxious }.count

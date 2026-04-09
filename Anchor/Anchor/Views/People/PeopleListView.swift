@@ -24,8 +24,15 @@ struct PeopleListView: View {
                 if displayedPeople.isEmpty && searchText.isEmpty {
                     emptyState
                 } else {
-                    ScrollView {
-                        LazyVStack(spacing: 10) {
+                    List {
+                        Section {
+                            PeopleLegendView()
+                                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                        }
+
+                        Section {
                             ForEach(displayedPeople) { person in
                                 NavigationLink(destination: PersonDetailView(person: person)) {
                                     PersonRowView(person: person)
@@ -38,20 +45,22 @@ struct PeopleListView: View {
                                 .buttonStyle(.plain)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
-                                        modelContext.delete(person)
+                                        deletePerson(person)
                                     } label: {
                                         Label("Delete", systemImage: "trash")
                                     }
                                 }
+                                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
                             }
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                        .padding(.bottom, 20)
                     }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
-            .navigationTitle("Anchor")
+            .navigationTitle("People")
             .searchable(text: $searchText, prompt: "Search people")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -73,6 +82,12 @@ struct PeopleListView: View {
                 AddPersonView()
             }
         }
+    }
+
+    private func deletePerson(_ person: Person) {
+        modelContext.delete(person)
+        try? modelContext.save()
+        HapticFeedback.selection()
     }
 
     private var emptyState: some View {
@@ -106,6 +121,39 @@ struct PeopleListView: View {
                     .foregroundStyle(.white)
                     .clipShape(Capsule())
             }
+        }
+    }
+}
+
+private struct PeopleLegendView: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Row color shows the dominant tone of your logged interactions with that person.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                item(color: AnchorColors.secure, label: "Secure")
+                item(color: AnchorColors.anxious, label: "Anxious")
+                item(color: AnchorColors.avoidant, label: "Avoidant")
+                item(color: AnchorColors.neutral, label: "No sentiment yet")
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color(.secondarySystemGroupedBackground))
+        )
+    }
+
+    private func item(color: Color, label: String) -> some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
     }
 }

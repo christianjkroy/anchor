@@ -2,7 +2,7 @@ import Foundation
 
 /// Fire-and-forget backend sync. All operations are best-effort;
 /// failures are logged but never surface to the user.
-/// Configure via Settings → Backend Sync.
+/// Sync runs automatically whenever a server URL and access token are saved.
 actor AnchorAPIService {
     static let shared = AnchorAPIService()
 
@@ -10,12 +10,21 @@ actor AnchorAPIService {
 
     // MARK: - Configuration (read from UserDefaults, written by SettingsView via @AppStorage)
 
-    var isSyncEnabled: Bool { defaults.bool(forKey: "anchorSyncEnabled") }
-    var baseURL: String     { defaults.string(forKey: "anchorAPIBaseURL") ?? "" }
-    var token: String       { defaults.string(forKey: "anchorAPIToken") ?? "" }
+    var baseURL: String {
+        let saved = defaults.string(forKey: "anchorAPIBaseURL")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !saved.isEmpty { return saved }
+        #if targetEnvironment(simulator)
+        return "http://localhost:3001"
+        #else
+        return ""
+        #endif
+    }
+    var token: String {
+        defaults.string(forKey: "anchorAPIToken")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
 
     private var isConfigured: Bool {
-        isSyncEnabled && !baseURL.isEmpty && !token.isEmpty
+        !baseURL.isEmpty && !token.isEmpty
     }
 
     // MARK: - Person sync
@@ -31,7 +40,7 @@ actor AnchorAPIService {
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: body) else { return nil }
 
-        var req = urlRequest(url: url, method: "POST", body: data)
+        let req = urlRequest(url: url, method: "POST", body: data)
         do {
             let (responseData, _) = try await URLSession.shared.data(for: req)
             let json = try JSONSerialization.jsonObject(with: responseData) as? [String: Any]

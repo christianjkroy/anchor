@@ -1,14 +1,25 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @AppStorage("anchorSyncEnabled") private var syncEnabled = false
     @AppStorage("anchorAPIBaseURL")  private var apiBaseURL  = ""
     @AppStorage("anchorAPIToken")    private var apiToken    = ""
 
+    private var isBackendConfigured: Bool {
+        !normalizedBaseURL.isEmpty && !normalizedToken.isEmpty
+    }
+
+    private var normalizedBaseURL: String {
+        apiBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var normalizedToken: String {
+        apiToken.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section("Analysis") {
+            List {
+                Section(header: Text("Analysis")) {
                     HStack {
                         Image(systemName: "brain")
                             .foregroundStyle(AnchorColors.secure)
@@ -20,43 +31,49 @@ struct SettingsView: View {
                     }
                 }
 
-                Section {
-                    Toggle("Enable backend sync", isOn: $syncEnabled)
-
-                    if syncEnabled {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Server URL")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            TextField("http://192.168.x.x:3001", text: $apiBaseURL)
-                                .keyboardType(.URL)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-                        }
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Auth token (JWT)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                            SecureField("Paste your token here", text: $apiToken)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.never)
-                        }
-
-                        Text("New people and interactions will sync to your backend after being saved locally. Sync failures are silent — local data is always the source of truth.")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                Section(
+                    header: Text("Sync"),
+                    footer: Text("Anchor works fully on-device by default. If you add a server URL and access token, syncing starts automatically in the background. The access token is just your backend sign-in token.")
+                        .font(.caption2)
+                ) {
+                    HStack {
+                        Label("Backend connection", systemImage: "antenna.radiowaves.left.and.right")
+                        Spacer()
+                        Text(isBackendConfigured ? "Automatic" : "Local only")
+                            .foregroundStyle(isBackendConfigured ? AnchorColors.secure : .secondary)
+                            .font(.subheadline)
                     }
-                } header: {
-                    Text("Backend Sync")
-                } footer: {
-                    if syncEnabled && !apiBaseURL.isEmpty {
-                        Text("Syncing to \(apiBaseURL)")
-                            .font(.caption2)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Server URL")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextField("http://localhost:3001", text: $apiBaseURL)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Access token")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        SecureField("Paste your backend sign-in token", text: $apiToken)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                    }
+
+                    if isBackendConfigured {
+                        Button(role: .destructive) {
+                            apiBaseURL = ""
+                            apiToken = ""
+                        } label: {
+                            Text("Clear backend connection")
+                        }
                     }
                 }
 
-                Section("About") {
+                Section(header: Text("About")) {
                     HStack {
                         Text("Version")
                         Spacer()
@@ -71,7 +88,15 @@ struct SettingsView: View {
                     }
                 }
             }
+            .listStyle(.insetGrouped)
             .navigationTitle("Settings")
+            .onAppear {
+                #if targetEnvironment(simulator)
+                if apiBaseURL.isEmpty {
+                    apiBaseURL = "http://localhost:3001"
+                }
+                #endif
+            }
         }
     }
 }

@@ -39,7 +39,7 @@ struct AnchorApp: App {
         let context = container.mainContext
         do {
             let people = try context.fetch(FetchDescriptor<Person>())
-            let result = try await ClaudeService.shared.generateWeeklyDigest(people: people)
+            let result = try await LocalAnalysisService.shared.generateWeeklyDigest(people: people)
             let weekStart = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
             let digest = WeeklyDigest(
                 weekStartDate: weekStart,

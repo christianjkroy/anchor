@@ -5,9 +5,11 @@
  * Uses OpenAI function calling for reliable JSON output — same principle as DSPy signatures.
  */
 import OpenAI from 'openai';
+import { getCompatibleOpenAIConfig, getServiceConfig, isLLMEnabled } from '../lib/service_config.js';
 
-const client = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const clientConfig = getCompatibleOpenAIConfig();
+const client = isLLMEnabled() && clientConfig
+  ? new OpenAI(clientConfig)
   : null;
 
 const INTERACTION_SCHEMA = {
@@ -55,7 +57,7 @@ const INTERACTION_SCHEMA = {
  * @returns {object} Structured interaction fields
  */
 export async function runLoggerAgent(rawInput) {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!client) {
     return {
       type: rawInput.type ?? 'text',
       initiated_by: rawInput.initiatedBy ?? 'unclear',
@@ -70,7 +72,7 @@ export async function runLoggerAgent(rawInput) {
   const prompt = buildPrompt(rawInput);
 
   const response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: getServiceConfig().llm.chatModel,
     messages: [
       {
         role: 'system',

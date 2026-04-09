@@ -1,6 +1,6 @@
 import Foundation
 
-enum ClaudePrompts {
+enum LocalAnalysisPrompts {
 
     // MARK: - Sentiment Classification
 

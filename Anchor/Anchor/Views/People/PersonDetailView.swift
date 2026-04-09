@@ -105,7 +105,7 @@ struct PersonDetailView: View {
         isDetectingPatterns = true
         defer { isDetectingPatterns = false }
         do {
-            let results = try await ClaudeService.shared.detectPatterns(for: person)
+            let results = try await LocalAnalysisService.shared.detectPatterns(for: person)
             // Delete old patterns for this person
             let name = person.name
             let old = (try? modelContext.fetch(

@@ -1,13 +1,13 @@
 /**
- * Analyzer Agent (LangChain)
+ * Analyzer Agent
  *
  * Updates a person's profile after a new interaction. Recalculates initiation ratio,
  * energy trend, consistency score. Drafts potential insights. Has full DB access.
  */
-import { ChatOpenAI } from '@langchain/openai';
-import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import OpenAI from 'openai';
 import { pool } from '../db/pool.js';
 import { callRAnalysis } from '../analysis/r_client.js';
+import { getCompatibleOpenAIConfig, getServiceConfig, isLLMEnabled, isRPlumberEnabled } from '../lib/service_config.js';
 import {
   computeConsistencyScore,
   computeEnergyTrend,
@@ -16,8 +16,9 @@ import {
   computeRealityScore,
 } from '../lib/relationship_metrics.js';
 
-const llm = process.env.OPENAI_API_KEY
-  ? new ChatOpenAI({ model: 'gpt-4o-mini', temperature: 0 })
+const clientConfig = getCompatibleOpenAIConfig();
+const llm = isLLMEnabled() && clientConfig
+  ? new OpenAI(clientConfig)
   : null;
 
 /**
@@ -43,13 +44,15 @@ export async function runAnalyzerAgent(interaction, userId) {
 
   // Call R for statistically-backed initiation confidence interval
   let initiationCI = null;
-  try {
-    initiationCI = await callRAnalysis('/initiation-analysis', {
-      personId: person_id,
-      userId,
-    });
-  } catch {
-    // R unavailable — proceed without CI
+  if (isRPlumberEnabled()) {
+    try {
+      initiationCI = await callRAnalysis('/initiation-analysis', {
+        personId: person_id,
+        userId,
+      });
+    } catch {
+      // R unavailable — proceed without CI
+    }
   }
 
   // Update person record
@@ -134,15 +137,19 @@ Return [] if nothing noteworthy. Never invent patterns from sparse data (< 4 int
 `;
 
   try {
-    const response = await llm.invoke([
-      new SystemMessage('You return only valid JSON arrays. No prose.'),
-      new HumanMessage(prompt),
-    ]);
-    const rawText = typeof response.content === 'string'
-      ? response.content
-      : JSON.stringify(response.content);
+    const response = await llm.chat.completions.create({
+      model: getServiceConfig().llm.chatModel,
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: 'Return JSON only. Respond with an object containing an "insights" array.' },
+        { role: 'user', content: prompt },
+      ],
+    });
+    const rawText = response.choices[0]?.message?.content ?? '';
     const text = rawText.replace(/```json\n?|\n?```/g, '').trim();
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : parsed.insights ?? [];
   } catch {
     return [];
   }

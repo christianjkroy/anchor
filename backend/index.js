@@ -12,6 +12,7 @@ import { insightsRouter } from './routes/insights.js';
 import { perceptionRouter } from './routes/perception.js';
 import { digestRouter } from './routes/digest.js';
 import { authenticate } from './middleware/auth.js';
+import { getServiceConfig } from './lib/service_config.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -32,7 +33,12 @@ app.use('/api/insights', authenticate, insightsRouter);
 app.use('/api/perception', authenticate, perceptionRouter);
 app.use('/api/digest', authenticate, digestRouter);
 
-app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/health', (_req, res) => {
+  res.json({
+    ok: true,
+    services: getServiceConfig(),
+  });
+});
 
 // Serve React dashboard build when present
 app.use(express.static(webDistPath));

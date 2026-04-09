@@ -96,7 +96,7 @@ struct DigestListView: View {
             let descriptor = FetchDescriptor<Person>()
             let people = try modelContext.fetch(descriptor)
 
-            let result = try await ClaudeService.shared.generateWeeklyDigest(people: people)
+            let result = try await LocalAnalysisService.shared.generateWeeklyDigest(people: people)
 
             let weekStart = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
             let digest = WeeklyDigest(

@@ -205,7 +205,7 @@ struct LogInteractionView: View {
 
         // Classify sentiment and sync to backend
         Task { @MainActor in
-            try? await ClaudeService.shared.classifyPendingSentiments(for: person, context: modelContext)
+            try? await LocalAnalysisService.shared.classifyPendingSentiments(for: person, context: modelContext)
 
             // Ensure person is synced first
             if person.backendId == nil {

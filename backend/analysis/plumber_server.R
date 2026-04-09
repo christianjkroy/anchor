@@ -211,5 +211,17 @@ function(req, res) {
   )
 }
 
-pr <- plumber::plumb()
-pr$run(host = '0.0.0.0', port = as.integer(Sys.getenv('R_PORT', '8000')))
+if (!isTRUE(getOption("anchor.plumber.loading"))) {
+  options(anchor.plumber.loading = TRUE)
+
+  args <- commandArgs(trailingOnly = FALSE)
+  file_arg <- grep("^--file=", args, value = TRUE)
+  script_path <- if (length(file_arg)) {
+    sub("^--file=", "", file_arg[[1]])
+  } else {
+    "analysis/plumber_server.R"
+  }
+
+  pr <- plumber::plumb(normalizePath(script_path, winslash = "/", mustWork = TRUE))
+  pr$run(host = "0.0.0.0", port = as.integer(Sys.getenv("R_PORT", "8000")))
+}

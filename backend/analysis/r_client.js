@@ -1,11 +1,17 @@
 /**
  * HTTP client for the R Plumber API (runs at R_PLUMBER_URL).
  */
-
-const R_BASE = process.env.R_PLUMBER_URL || 'http://localhost:8000';
+import { getServiceConfig } from '../lib/service_config.js';
 
 export async function callRAnalysis(endpoint, body) {
-  const url = R_BASE + endpoint;
+  const { rPlumber } = getServiceConfig();
+  if (!rPlumber.enabled || !rPlumber.url) {
+    const error = new Error('R Plumber service is not configured');
+    error.code = 'R_NOT_CONFIGURED';
+    throw error;
+  }
+
+  const url = rPlumber.url + endpoint;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

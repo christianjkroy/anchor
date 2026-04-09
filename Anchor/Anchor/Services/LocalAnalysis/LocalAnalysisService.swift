@@ -4,8 +4,8 @@ import FoundationModels
 
 /// Sentiment and pattern analysis runs on-device using rule-based logic.
 /// Digest narrative uses Apple Foundation Models (iOS 26+) with a template fallback.
-actor ClaudeService {
-    static let shared = ClaudeService()
+actor LocalAnalysisService {
+    static let shared = LocalAnalysisService()
 
     // MARK: - Sentiment Classification
 

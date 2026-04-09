@@ -7,9 +7,11 @@
 import OpenAI from 'openai';
 import { pool } from '../db/pool.js';
 import { callRAnalysis } from '../analysis/r_client.js';
+import { getCompatibleOpenAIConfig, getServiceConfig, isLLMEnabled, isRPlumberEnabled } from '../lib/service_config.js';
 
-const client = process.env.OPENAI_API_KEY
-  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const clientConfig = getCompatibleOpenAIConfig();
+const client = isLLMEnabled() && clientConfig
+  ? new OpenAI(clientConfig)
   : null;
 
 const CRITIQUE_SCHEMA = {
@@ -68,7 +70,7 @@ export async function runCriticAgent(draftInsights, personId, userId) {
   let decisions = [];
   if (client) {
     const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: getServiceConfig().llm.chatModel,
       messages: [
         {
           role: 'system',
@@ -124,6 +126,12 @@ Total interactions with this person: ${totalInteractions}`,
 
 async function runStatisticalValidation(insights, personId, userId) {
   if (!insights.length) return {};
+  if (!isRPlumberEnabled()) {
+    return Object.fromEntries(
+      insights.map((insight) => [insight.index, { error: 'R not configured', validated: false }])
+    );
+  }
+
   const results = {};
 
   for (const insight of insights) {

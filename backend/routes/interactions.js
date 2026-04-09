@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db/pool.js';
 import { runAgentPipeline } from '../agents/pipeline.js';
 import { asyncHandler } from '../middleware/async_handler.js';
+import { createInteractionEmbedding, embeddingToSqlVector } from '../lib/embeddings.js';
 
 export const interactionsRouter = Router();
 
@@ -85,9 +86,17 @@ interactionsRouter.delete('/:id', asyncHandler(async (req, res) => {
 
 // Semantic search via pgvector
 interactionsRouter.post('/search', asyncHandler(async (req, res) => {
-  const { embedding, limit = 10 } = req.body;
-  if (!Array.isArray(embedding)) return res.status(400).json({ error: 'embedding array required' });
+  const { embedding, query, limit = 10 } = req.body;
   const normalizedLimit = clampInteger(limit, 10, { min: 1, max: 50 });
+  let searchEmbedding = embedding;
+
+  if (!Array.isArray(searchEmbedding)) {
+    if (!query || typeof query !== 'string' || !query.trim()) {
+      return res.status(400).json({ error: 'embedding array or query string required' });
+    }
+    searchEmbedding = await createInteractionEmbedding(query);
+  }
+
   const { rows } = await pool.query(
     `SELECT i.*, p.name AS person_name,
             (embedding <=> $1::vector) AS distance
@@ -96,7 +105,7 @@ interactionsRouter.post('/search', asyncHandler(async (req, res) => {
      WHERE i.user_id = $2 AND i.embedding IS NOT NULL
      ORDER BY distance ASC
      LIMIT $3`,
-    [`[${embedding.join(',')}]`, req.user.userId, normalizedLimit]
+    [embeddingToSqlVector(searchEmbedding), req.user.userId, normalizedLimit]
   );
   res.json(rows);
 }));

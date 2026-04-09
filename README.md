@@ -1,60 +1,66 @@
 # Anchor
 
-Anchor is a relationship intelligence system for logging interactions, measuring relationship patterns, and comparing anxious perception to behavioral reality across iOS, backend, web, and model-training workflows.
+Anchor is a relationship intelligence platform for tracking interactions, measuring recurring social patterns, and comparing perception against behavioral reality across iOS, backend, web, and analysis workflows.
 
-## What It Does
+## Core Capabilities
 
 - Log people and interactions from the iOS app
-- Track relationship metrics like initiation ratio, consistency, and reality score
-- Run an asynchronous insight pipeline with logger, analyzer, and critic stages
-- Generate weekly digests and perception checks
-- Support a lightweight web dashboard for reviewing relationship data
-- Provide training and export scripts for experimentation with local sentiment models
+- Sync people and interactions to a Node.js API
+- Enrich interactions asynchronously with sentiment labels and embeddings
+- Generate perception checks and weekly digests
+- Review relationship data in a lightweight web dashboard
+- Experiment with local training and export workflows for sentiment models
 
-## Stack
+## Architecture
 
-- iOS: SwiftUI + Metal + Core ML
-- Backend: Node.js + PostgreSQL + pgvector
-- Agent pipeline: Logger -> Analyzer -> Critic
-- Analysis: R Plumber API
-- Web dashboard: React + CSS
-- Training: Hugging Face + CUDA + MLX + Core ML export scripts
+- iOS app: SwiftUI + SwiftData + on-device analysis + Foundation Models fallback
+- Backend API: Node.js + Express + PostgreSQL + pgvector
+- LLM pipeline: logger, analyzer, and critic stages with OpenAI or Ollama
+- Statistical analysis: R Plumber service
+- Web dashboard: React + Vite
+- Training utilities: Hugging Face, CUDA, MLX, and Core ML export scripts
 
 ## Repository Layout
 
-- `Anchor/`: iOS app code
-- `backend/`: Node API, SQL migrations, agents, and R integration
-- `web/`: React dashboard
-- `training/`: model fine-tuning, export, validation, and Core ML conversion scripts
+- `Anchor/`: iOS application and project files
+- `backend/`: API server, migrations, agents, embeddings, and R integration
+- `web/`: browser-based relationship dashboard
+- `training/`: model fine-tuning, validation, export, and conversion scripts
 
 ## Quick Start
 
-1. Start PostgreSQL (pgvector included):
+1. Start PostgreSQL:
    - `docker compose up -d postgres`
-2. Configure backend env:
+2. Configure backend environment:
    - copy `backend/.env.example` to `backend/.env`
-3. Run backend migration and API:
+3. Start the backend:
    - `cd backend`
    - `npm install`
    - `npm run migrate`
    - `npm run start`
-4. Run R analysis API (optional but recommended):
+4. Start the R analysis service:
    - `cd backend`
    - `Rscript analysis/plumber_server.R`
-5. Run web dashboard:
+5. Start the web dashboard:
    - `cd web`
    - `npm install`
    - `npm run dev`
+6. Open the iOS app in Xcode:
+   - `open Anchor/Anchor.xcodeproj`
 
-## Optional Services
+## Service Configuration
 
-- `OPENAI_API_KEY`: enables richer agent behavior for the logger, analyzer, and critic pipeline
-- `R_PLUMBER_URL`: enables R-backed perception and statistical analysis
-- Without those services configured, the backend falls back to deterministic local logic where possible
+- `LLM_PROVIDER`: choose `openai` or `ollama`
+- `OPENAI_API_KEY`: enables OpenAI-backed enrichment when `LLM_PROVIDER=openai`
+- `OPENAI_CHAT_MODEL`, `OPENAI_EMBEDDING_MODEL`: override OpenAI defaults
+- `OLLAMA_BASE_URL`, `OLLAMA_CHAT_MODEL`, `OLLAMA_EMBEDDING_MODEL`: point the backend at a local Ollama instance
+- `R_PLUMBER_URL`: enables R-backed perception and clustering analysis
+- `GET /health`: reports configured backend, LLM, Ollama, and R service status
 
 ## Notes
 
-- The agent pipeline runs asynchronously after interaction creation.
-- `weekly_digests` supports upsert by `(user_id, week_start_date)`.
-- R analysis requires an installed R runtime with `plumber` and `jsonlite` (and optionally `DBI` + `RPostgres`).
-- Generated folders like `node_modules/`, `web/dist/`, `.venv/`, and `__pycache__/` should remain untracked.
+- Interaction enrichment runs asynchronously after interaction creation.
+- Embeddings are stored in PostgreSQL with `pgvector` for semantic search.
+- Weekly digests support upsert by `(user_id, week_start_date)`.
+- R analysis requires `plumber` and `jsonlite`, with `DBI` and `RPostgres` recommended for database-backed analysis.
+- Generated folders such as `node_modules/`, `web/dist/`, `.venv/`, and `__pycache__/` should remain untracked.

@@ -1,7 +1,7 @@
 {
   "name": "anchor-backend",
   "version": "1.0.0",
-  "description": "Anchor relationship tracker API server",
+  "description": "Anchor relationship intelligence API with async enrichment, embeddings, and digest generation",
   "main": "index.js",
   "type": "module",
   "scripts": {

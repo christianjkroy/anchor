@@ -8,9 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		AB0220000000000000000000 /* PreviewData.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0220000000000000000000 /* PreviewData.swift */; };
-		AB0201000000000000000000 /* ClaudeModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0201000000000000000000 /* ClaudeModels.swift */; };
-		AB0202000000000000000000 /* ClaudePrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0202000000000000000000 /* ClaudePrompts.swift */; };
-		AB0203000000000000000000 /* ClaudeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0203000000000000000000 /* ClaudeService.swift */; };
+		AB0201000000000000000000 /* LocalAnalysisModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0201000000000000000000 /* LocalAnalysisModels.swift */; };
+		AB0202000000000000000000 /* LocalAnalysisPrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0202000000000000000000 /* LocalAnalysisPrompts.swift */; };
+		AB0203000000000000000000 /* LocalAnalysisService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0203000000000000000000 /* LocalAnalysisService.swift */; };
 		AB0204000000000000000000 /* DigestNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0204000000000000000000 /* DigestNotificationService.swift */; };
 		AB0205000000000000000000 /* EncryptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0205000000000000000000 /* EncryptionService.swift */; };
 		AB0206000000000000000000 /* SupabaseModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0206000000000000000000 /* SupabaseModels.swift */; };
@@ -51,9 +51,9 @@
 
 /* Begin PBXFileReference section */
 		AA0220000000000000000000 /* PreviewData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewData.swift; sourceTree = "<group>"; };
-		AA0201000000000000000000 /* ClaudeModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeModels.swift; sourceTree = "<group>"; };
-		AA0202000000000000000000 /* ClaudePrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudePrompts.swift; sourceTree = "<group>"; };
-		AA0203000000000000000000 /* ClaudeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeService.swift; sourceTree = "<group>"; };
+		AA0201000000000000000000 /* LocalAnalysisModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAnalysisModels.swift; sourceTree = "<group>"; };
+		AA0202000000000000000000 /* LocalAnalysisPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAnalysisPrompts.swift; sourceTree = "<group>"; };
+		AA0203000000000000000000 /* LocalAnalysisService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalAnalysisService.swift; sourceTree = "<group>"; };
 		AA0204000000000000000000 /* DigestNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DigestNotificationService.swift; sourceTree = "<group>"; };
 		AA0205000000000000000000 /* EncryptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EncryptionService.swift; sourceTree = "<group>"; };
 		AA0206000000000000000000 /* SupabaseModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseModels.swift; sourceTree = "<group>"; };
@@ -218,7 +218,7 @@
 			isa = PBXGroup;
 			children = (
 
-				AC0B02000000000000000000 /* Claude */,
+				AC0B02000000000000000000 /* LocalAnalysis */,
 				AC0B03000000000000000000 /* Notifications */,
 				AC0B04000000000000000000 /* Supabase */,
 				AC0B09000000000000000000 /* Speech */,
@@ -228,14 +228,14 @@
 			sourceTree = "<group>";
 		};
 
-		AC0B02000000000000000000 /* Claude */ = {
+		AC0B02000000000000000000 /* LocalAnalysis */ = {
 			isa = PBXGroup;
 			children = (
-								AA0201000000000000000000 /* ClaudeModels.swift */,
-				AA0202000000000000000000 /* ClaudePrompts.swift */,
-				AA0203000000000000000000 /* ClaudeService.swift */,
+								AA0201000000000000000000 /* LocalAnalysisModels.swift */,
+				AA0202000000000000000000 /* LocalAnalysisPrompts.swift */,
+				AA0203000000000000000000 /* LocalAnalysisService.swift */,
 			);
-			path = Claude;
+			path = LocalAnalysis;
 			sourceTree = "<group>";
 		};
 
@@ -409,9 +409,9 @@
 				AB00000B0000000000000000 /* LogInteractionView.swift in Sources */,
 				AB00000C0000000000000000 /* GraphPlaceholderView.swift in Sources */,
 			
-				AB0201000000000000000000 /* ClaudeModels.swift in Sources */,
-				AB0202000000000000000000 /* ClaudePrompts.swift in Sources */,
-				AB0203000000000000000000 /* ClaudeService.swift in Sources */,
+				AB0201000000000000000000 /* LocalAnalysisModels.swift in Sources */,
+				AB0202000000000000000000 /* LocalAnalysisPrompts.swift in Sources */,
+				AB0203000000000000000000 /* LocalAnalysisService.swift in Sources */,
 				AB0204000000000000000000 /* DigestNotificationService.swift in Sources */,
 				AB0205000000000000000000 /* EncryptionService.swift in Sources */,
 				AB0206000000000000000000 /* SupabaseModels.swift in Sources */,

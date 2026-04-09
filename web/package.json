@@ -2,6 +2,7 @@
   "name": "anchor-web",
   "private": true,
   "version": "1.0.0",
+  "description": "Web dashboard for Anchor relationship intelligence data",
   "type": "module",
   "scripts": {
     "dev": "vite",

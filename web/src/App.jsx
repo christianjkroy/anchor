@@ -103,7 +103,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">Anchor Dashboard</p>
+          <p className="eyebrow">Anchor Relationship Dashboard</p>
           <h1>Perception vs Reality</h1>
           <p>Welcome back{user.display_name ? `, ${user.display_name}` : ''}.</p>
         </div>

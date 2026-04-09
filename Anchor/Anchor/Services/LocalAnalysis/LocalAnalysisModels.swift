@@ -1,6 +1,6 @@
 import Foundation
 
-// MARK: - Result types (used by ClaudeService locally)
+// MARK: - Result types used by local analysis services
 
 struct SentimentResult: Decodable {
     let label: SentimentLabel

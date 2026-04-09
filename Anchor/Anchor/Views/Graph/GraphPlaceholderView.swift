@@ -16,19 +16,11 @@ struct GraphTabView: View {
     @Query private var people: [Person]
     @State private var viewModel = GraphViewModel()
     @State private var selectedPersonID: PersistentIdentifier? = nil
-    @State private var popoverPersonID: PersistentIdentifier? = nil
-    @State private var popoverAnchorPoint: CGPoint = .zero
-    @State private var showPopover = false
     @State private var dateRangeStart: Date = Calendar.current.date(byAdding: .month, value: -3, to: .now) ?? .now
     @State private var navigateToDetail = false
 
     var selectedPerson: Person? {
         guard let id = selectedPersonID else { return nil }
-        return people.first { $0.persistentModelID == id }
-    }
-
-    var popoverPerson: Person? {
-        guard let id = popoverPersonID else { return nil }
         return people.first { $0.persistentModelID == id }
     }
 
@@ -70,11 +62,6 @@ struct GraphTabView: View {
                         onNodeTapped: { id in
                             selectedPersonID = id
                             navigateToDetail = true
-                        },
-                        onNodeLongPressed: { id, point in
-                            popoverPersonID = id
-                            popoverAnchorPoint = point
-                            showPopover = true
                         }
                     )
                     .onAppear {
@@ -119,13 +106,6 @@ struct GraphTabView: View {
                     }
                 }
             }
-            .overlay {
-                if showPopover, let person = popoverPerson {
-                    NodePopover(person: person, anchorPoint: popoverAnchorPoint) {
-                        showPopover = false
-                    }
-                }
-            }
             .navigationTitle("Relationships")
             .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(isPresented: $navigateToDetail) {
@@ -147,7 +127,7 @@ private struct GraphLegend: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Relationship Map")
                         .font(.headline)
-                    Text("Tap a node to open the full profile. Long-press for a quick snapshot.")
+                    Text("Tap a node to open the full profile.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -188,7 +168,6 @@ private struct GraphLegend: View {
 private struct SwiftUIGraphView: View {
     let viewModel: GraphViewModel
     let onNodeTapped: (PersistentIdentifier) -> Void
-    let onNodeLongPressed: (PersistentIdentifier, CGPoint) -> Void
 
     var body: some View {
         GeometryReader { geo in
@@ -235,11 +214,6 @@ private struct SwiftUIGraphView: View {
                     }
                     .buttonStyle(.plain)
                     .position(point)
-                    .simultaneousGesture(
-                        LongPressGesture(minimumDuration: 0.35).onEnded { _ in
-                            onNodeLongPressed(node.id, point)
-                        }
-                    )
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -264,63 +238,6 @@ private struct SwiftUIGraphView: View {
             blue: Double(value.z),
             opacity: Double(value.w)
         )
-    }
-}
-
-
-// MARK: - Node Popover
-
-private struct NodePopover: View {
-    let person: Person
-    let anchorPoint: CGPoint
-    let dismiss: () -> Void
-
-    var body: some View {
-        ZStack(alignment: .topLeading) {
-            Color.clear
-                .contentShape(Rectangle())
-                .onTapGesture { dismiss() }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(person.name)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-
-                HStack(spacing: 12) {
-                    popoverStat(label: "Initiation", value: "\(Int(person.initiationRatio * 100))% you")
-                    if let sentiment = person.dominantSentiment {
-                        popoverStat(label: "Tone", value: sentiment.displayName)
-                    }
-                }
-
-                if let days = person.daysSinceLastInteraction {
-                    popoverStat(label: "Last seen", value: days == 0 ? "Today" : "\(days)d ago")
-                }
-
-                Text("Long-press gives you a quick summary. Tap opens the full profile.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(.regularMaterial)
-                    .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
-            )
-            .frame(width: 200)
-            .position(
-                x: min(max(anchorPoint.x, 110), UIScreen.main.bounds.width - 110),
-                y: max(anchorPoint.y - 80, 80)
-            )
-        }
-        .ignoresSafeArea()
-    }
-
-    private func popoverStat(label: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(.caption2).foregroundStyle(.secondary)
-            Text(value).font(.caption).fontWeight(.medium)
-        }
     }
 }
 

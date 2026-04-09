@@ -1,9 +1,8 @@
 import Foundation
 import SwiftData
-import FoundationModels
 
 /// Sentiment and pattern analysis runs on-device using rule-based logic.
-/// Digest narrative uses Apple Foundation Models (iOS 26+) with a template fallback.
+/// Digest narrative is deterministic so it stays clear and reproducible.
 actor LocalAnalysisService {
     static let shared = LocalAnalysisService()
 
@@ -199,67 +198,7 @@ actor LocalAnalysisService {
         patterns: [PatternResult],
         initiationChanges: [InitiationChange]
     ) async -> String {
-        let context = buildNarrativeContext(people: people, thirtyDaysAgo: thirtyDaysAgo, now: now, patterns: patterns, initiationChanges: initiationChanges)
-
-        if #available(iOS 26.0, *) {
-            if let result = try? await generateWithFoundationModels(context: context) {
-                return result
-            }
-        }
         return templateNarrative(people: people, thirtyDaysAgo: thirtyDaysAgo, now: now)
-    }
-
-    @available(iOS 26.0, *)
-    private static func generateWithFoundationModels(context: String) async throws -> String {
-        let session = LanguageModelSession()
-        let prompt = """
-        You're writing a personal relationship digest for someone who tracks their social life. \
-        Below is raw data about their interactions over the past 30 days. \
-        Write 4–5 sentences that read like a thoughtful friend reflecting on their social patterns — \
-        honest, specific, warm but direct. Cover each person mentioned. \
-        Notice what's working, what might be draining them, and any patterns worth paying attention to. \
-        Don't list stats mechanically. Don't sound like a bot. Don't use bullet points or headers. \
-        Just write naturally, as if you know them.
-
-        \(context)
-        """
-        let response = try await session.respond(to: prompt)
-        return response.content
-    }
-
-    private static func buildNarrativeContext(
-        people: [Person],
-        thirtyDaysAgo: Date,
-        now: Date,
-        patterns: [PatternResult],
-        initiationChanges: [InitiationChange]
-    ) -> String {
-        let df = DateFormatter(); df.dateStyle = .medium
-        var lines = ["Period: \(df.string(from: thirtyDaysAgo)) – \(df.string(from: now))"]
-
-        // Per-person breakdown
-        let sorted = people.sorted { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count > $1.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count }
-        for person in sorted {
-            let recentCount = person.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count
-            let sentiment = person.dominantSentiment?.rawValue.lowercased() ?? "unclear"
-            let initiatorPct = Int(person.initiationRatio * 100)
-            let lastSeen = person.daysSinceLastInteraction.map { $0 == 0 ? "today" : "\($0) days ago" } ?? "unknown"
-            let feelingAfter = person.mostCommonFeelingAfter?.rawValue.lowercased() ?? "varies"
-            lines.append("- \(person.name): \(recentCount) interaction\(recentCount == 1 ? "" : "s"), tone mostly \(sentiment), you initiated \(initiatorPct)%, usually feel \(feelingAfter) after, last contact \(lastSeen)")
-        }
-
-        // Top patterns
-        if !patterns.isEmpty {
-            lines.append("Patterns: " + patterns.map { $0.summary }.joined(separator: "; "))
-        }
-
-        // Notable initiation shifts
-        let bigShifts = initiationChanges.filter { abs($0.delta) > 0.12 }
-        if !bigShifts.isEmpty {
-            lines.append("Initiation shifts: " + bigShifts.map { "\($0.personName) went from \(Int($0.previousRatio*100))% to \(Int($0.currentRatio*100))% you-initiated" }.joined(separator: "; "))
-        }
-
-        return lines.joined(separator: "\n")
     }
 
     private static func templateNarrative(people: [Person], thirtyDaysAgo: Date, now: Date) -> String {
@@ -297,12 +236,12 @@ actor LocalAnalysisService {
                 }
             }
             if initPct > 72 {
-                note += " — you're driving most of that contact"
+                note += ", and you're driving most of that contact"
             } else if initPct < 28 {
-                note += " — they're the one reaching out"
+                note += ", and they're the one reaching out"
             }
             if let t = tone, t == .anxious {
-                note += " (the dynamic feels a bit anxious)"
+                note += ", which still seems to carry some tension"
             }
             personNotes.append(note)
         }
@@ -310,28 +249,18 @@ actor LocalAnalysisService {
         // Overall tone sentence
         let overallTone: String
         if secureCount > anxiousCount * 2 {
-            let opts = ["Your social world felt relatively steady this month.", "The general vibe has been solid — more grounded than not.", "Things have been feeling pretty secure across the board."]
+            let opts = ["Your social world felt relatively steady this month.", "The general vibe has been solid, and more grounded than not.", "Things have been feeling pretty settled across the board."]
             overallTone = opts[seed % opts.count]
         } else if anxiousCount > secureCount {
-            let opts = ["There's been an anxious thread running through a lot of this.", "More of these interactions left you unsettled than at ease — worth paying attention to.", "The anxiety signal is coming through clearly this period."]
+            let opts = ["There has been a tense thread running through a lot of this.", "More of these interactions left you unsettled than at ease, which feels worth paying attention to.", "The tension signal is coming through clearly this period."]
             overallTone = opts[seed % opts.count]
         } else {
-            let opts = ["The emotional range here is pretty varied — which makes sense given the mix of people.", "No single tone is dominating, which might mean you're navigating a lot of different dynamics at once.", "Things feel mixed — not great, not bad, just a lot happening."]
+            let opts = ["The emotional range here is pretty varied, which makes sense given the mix of people.", "No single tone is dominating, which probably means you're navigating a lot of different dynamics at once.", "Things feel mixed, not great, not bad, just a lot happening."]
             overallTone = opts[seed % opts.count]
         }
 
-        let joined: String
-        if personNotes.count == 1 {
-            joined = personNotes[0] + "."
-        } else if personNotes.count == 2 {
-            joined = personNotes[0] + ", while " + personNotes[1].prefix(1).lowercased() + personNotes[1].dropFirst() + "."
-        } else {
-            let last = personNotes.last!
-            let rest = personNotes.dropLast().joined(separator: "; ")
-            joined = rest + "; and " + last.prefix(1).lowercased() + last.dropFirst() + "."
-        }
-
-        return "\(overallTone) \(joined)"
+        let joined = joinNarrativeNotes(personNotes)
+        return sanitizeNarrative("\(overallTone) \(joined)")
     }
 
     // MARK: - Errors
@@ -352,4 +281,22 @@ private extension PatternResult {
         case .low:    return 1
         }
     }
+}
+
+private func sanitizeNarrative(_ text: String) -> String {
+    text
+        .replacingOccurrences(of: "—", with: ",")
+        .replacingOccurrences(of: "  ", with: " ")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+private func joinNarrativeNotes(_ notes: [String]) -> String {
+    guard !notes.isEmpty else { return "" }
+    if notes.count == 1 { return notes[0] + "." }
+    if notes.count == 2 {
+        return notes[0] + ". " + notes[1].prefix(1).uppercased() + notes[1].dropFirst() + "."
+    }
+    let last = notes.last!
+    let rest = notes.dropLast().map { $0 + "." }.joined(separator: " ")
+    return rest + " " + last.prefix(1).uppercased() + last.dropFirst() + "."
 }

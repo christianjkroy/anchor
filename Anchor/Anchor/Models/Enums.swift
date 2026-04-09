@@ -127,6 +127,14 @@ enum SentimentLabel: String, CaseIterable, Codable, Hashable {
     case secure   = "Secure"
     case avoidant = "Avoidant"
 
+    var displayName: String {
+        switch self {
+        case .secure: return "Steady"
+        case .anxious: return "Tense"
+        case .avoidant: return "Distant"
+        }
+    }
+
     var color: Color {
         switch self {
         case .anxious:  return AnchorColors.anxious

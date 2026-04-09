@@ -38,9 +38,9 @@ struct SentimentDistributionBar: View {
                 .clipShape(RoundedRectangle(cornerRadius: 4))
 
                 HStack(spacing: 12) {
-                    LegendDot(color: AnchorColors.secure, label: "Secure", value: secure)
-                    LegendDot(color: AnchorColors.anxious, label: "Anxious", value: anxious)
-                    LegendDot(color: AnchorColors.avoidant, label: "Avoidant", value: avoidant)
+                    LegendDot(color: AnchorColors.secure, label: SentimentLabel.secure.displayName, value: secure)
+                    LegendDot(color: AnchorColors.anxious, label: SentimentLabel.anxious.displayName, value: anxious)
+                    LegendDot(color: AnchorColors.avoidant, label: SentimentLabel.avoidant.displayName, value: avoidant)
                 }
             } else {
                 RoundedRectangle(cornerRadius: 4)

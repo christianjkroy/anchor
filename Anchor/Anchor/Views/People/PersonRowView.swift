@@ -45,7 +45,7 @@ struct PersonRowView: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                     if let sentiment = person.dominantSentiment {
-                        Text(sentiment.rawValue)
+                        Text(sentiment.displayName)
                             .font(.caption2)
                             .fontWeight(.medium)
                             .padding(.horizontal, 6)

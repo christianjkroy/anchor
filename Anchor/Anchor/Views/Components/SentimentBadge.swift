@@ -12,7 +12,7 @@ struct SentimentBadge: View {
             Circle()
                 .fill(label.color)
                 .frame(width: 6, height: 6)
-            Text(label.rawValue)
+            Text(label.displayName)
                 .font(.caption2)
                 .fontWeight(.medium)
             if showConfidence {

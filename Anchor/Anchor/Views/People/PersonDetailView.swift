@@ -178,7 +178,7 @@ private struct PersonHeaderView: View {
 
     private var summaryLine: String {
         if let sentiment = person.dominantSentiment {
-            return "Mostly \(sentiment.rawValue.lowercased()) interactions across \(person.totalInteractions) logged moments."
+            return "Mostly \(sentiment.displayName.lowercased()) interactions across \(person.totalInteractions) logged moments."
         }
         return "\(person.totalInteractions) logged interaction\(person.totalInteractions == 1 ? "" : "s") so far."
     }

@@ -32,90 +32,97 @@ struct GraphTabView: View {
         return people.first { $0.persistentModelID == id }
     }
 
+    private var graphSnapshotKey: String {
+        displayedPeople.map {
+            [
+                String(describing: $0.persistentModelID),
+                $0.name,
+                String($0.interactions.count),
+                String($0.lastInteractionDate?.timeIntervalSince1970 ?? 0),
+                $0.dominantSentiment?.rawValue ?? "none"
+            ].joined(separator: "|")
+        }
+        .joined(separator: "||")
+    }
+
+    private var displayedPeople: [Person] {
+        people.filter { person in
+            !person.interactions.filter { $0.timestamp >= dateRangeStart && $0.timestamp <= Date.now }.isEmpty
+        }
+    }
+
     var body: some View {
         NavigationStack {
-            Group {
-                if !RelationshipGraphView.isMetalAvailable {
-                    VStack(spacing: 16) {
+            ZStack {
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.97, green: 0.98, blue: 0.98),
+                        Color(red: 0.93, green: 0.97, blue: 0.97)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+
+                GeometryReader { geo in
+                    SwiftUIGraphView(
+                        viewModel: viewModel,
+                        onNodeTapped: { id in
+                            selectedPersonID = id
+                            navigateToDetail = true
+                        },
+                        onNodeLongPressed: { id, point in
+                            popoverPersonID = id
+                            popoverAnchorPoint = point
+                            showPopover = true
+                        }
+                    )
+                    .onAppear {
+                        viewModel.setViewSize(geo.size)
+                        viewModel.dateRange = dateRangeStart...Date.now
+                        viewModel.rebuild(people: people)
+                    }
+                    .onChange(of: geo.size) { _, newSize in
+                        viewModel.setViewSize(newSize)
+                        viewModel.rebuild(people: people)
+                    }
+                    .onChange(of: graphSnapshotKey) { _, _ in
+                        viewModel.rebuild(people: people)
+                    }
+                    .onChange(of: dateRangeStart) { _, newStart in
+                        viewModel.dateRange = newStart...Date.now
+                        viewModel.rebuild(people: people)
+                    }
+                }
+            }
+            .safeAreaInset(edge: .top) {
+                GraphLegend(peopleCount: displayedPeople.count)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+            }
+            .safeAreaInset(edge: .bottom) {
+                DateRangeSlider(start: $dateRangeStart)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+            }
+            .overlay(alignment: .center) {
+                if displayedPeople.isEmpty {
+                    VStack(spacing: 12) {
                         Image(systemName: "point.3.connected.trianglepath.dotted")
-                            .font(.system(size: 56))
+                            .font(.largeTitle)
                             .foregroundStyle(AnchorColors.secure.opacity(0.5))
-                        Text("Graph requires a physical device")
-                            .font(.headline)
-                        Text("Metal GPU rendering isn't available on this simulator. Run on an iPhone to see the live graph.")
+                        Text("Add people and log interactions to see your relationship graph.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 40)
                     }
-                } else {
-                    ZStack {
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.97, green: 0.98, blue: 0.98),
-                                Color(red: 0.93, green: 0.97, blue: 0.97)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                        .ignoresSafeArea()
-
-                        GeometryReader { geo in
-                            RelationshipGraphView(
-                                viewModel: viewModel,
-                                onNodeTapped: { id in
-                                    selectedPersonID = id
-                                    navigateToDetail = true
-                                },
-                                onNodeLongPressed: { id, point in
-                                    popoverPersonID = id
-                                    popoverAnchorPoint = point
-                                    showPopover = true
-                                }
-                            )
-                            .onAppear {
-                                viewModel.setViewSize(geo.size)
-                                viewModel.rebuild(people: people)
-                            }
-                            .onChange(of: people.count) { _, _ in
-                                viewModel.rebuild(people: people)
-                            }
-                            .onChange(of: dateRangeStart) { _, newStart in
-                                viewModel.dateRange = newStart...Date.now
-                                viewModel.rebuild(people: people)
-                            }
-                        }
-                    }
-                    .safeAreaInset(edge: .top) {
-                        GraphLegend(peopleCount: people.count)
-                            .padding(.horizontal)
-                            .padding(.top, 8)
-                    }
-                    .safeAreaInset(edge: .bottom) {
-                        DateRangeSlider(start: $dateRangeStart)
-                            .padding(.horizontal)
-                            .padding(.bottom, 8)
-                    }
-                    .overlay(alignment: .center) {
-                        if people.isEmpty {
-                            VStack(spacing: 12) {
-                                Image(systemName: "point.3.connected.trianglepath.dotted")
-                                    .font(.largeTitle)
-                                    .foregroundStyle(AnchorColors.secure.opacity(0.5))
-                                Text("Add people and log interactions to see your relationship graph.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 40)
-                            }
-                        }
-                    }
-                    .overlay {
-                        if showPopover, let person = popoverPerson {
-                            NodePopover(person: person, anchorPoint: popoverAnchorPoint) {
-                                showPopover = false
-                            }
-                        }
+                }
+            }
+            .overlay {
+                if showPopover, let person = popoverPerson {
+                    NodePopover(person: person, anchorPoint: popoverAnchorPoint) {
+                        showPopover = false
                     }
                 }
             }
@@ -155,10 +162,10 @@ private struct GraphLegend: View {
             }
 
             HStack(spacing: 12) {
-                legendItem(color: AnchorColors.secure, label: "Secure")
-                legendItem(color: AnchorColors.anxious, label: "Anxious")
-                legendItem(color: AnchorColors.avoidant, label: "Avoidant")
-                legendItem(color: AnchorColors.neutral, label: "No sentiment yet")
+                legendItem(color: AnchorColors.secure, label: SentimentLabel.secure.displayName)
+                legendItem(color: AnchorColors.anxious, label: SentimentLabel.anxious.displayName)
+                legendItem(color: AnchorColors.avoidant, label: SentimentLabel.avoidant.displayName)
+                legendItem(color: AnchorColors.neutral, label: "No read yet")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -175,6 +182,88 @@ private struct GraphLegend: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
+    }
+}
+
+private struct SwiftUIGraphView: View {
+    let viewModel: GraphViewModel
+    let onNodeTapped: (PersistentIdentifier) -> Void
+    let onNodeLongPressed: (PersistentIdentifier, CGPoint) -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                Canvas { context, size in
+                    for edge in viewModel.edges {
+                        guard edge.sourceIndex < viewModel.nodes.count, edge.targetIndex < viewModel.nodes.count else { continue }
+                        let source = viewModel.nodes[edge.sourceIndex]
+                        let target = viewModel.nodes[edge.targetIndex]
+                        var path = Path()
+                        path.move(to: displayedPoint(for: source))
+                        path.addLine(to: displayedPoint(for: target))
+                        context.stroke(
+                            path,
+                            with: .color(Color(.systemGray3).opacity(min(Double(edge.weight) / 5.0, 0.65))),
+                            lineWidth: CGFloat(max(1.5, edge.weight))
+                        )
+                    }
+                }
+
+                ForEach(viewModel.nodes) { node in
+                    let point = displayedPoint(for: node)
+                    Button {
+                        onNodeTapped(node.id)
+                    } label: {
+                        VStack(spacing: 6) {
+                            Circle()
+                                .fill(nodeColor(node.color))
+                                .frame(width: CGFloat(node.radius), height: CGFloat(node.radius))
+                                .overlay(
+                                    Circle()
+                                        .strokeBorder(.white.opacity(0.8), lineWidth: 2)
+                                )
+                                .shadow(color: .black.opacity(0.10), radius: 10, y: 4)
+
+                            Text(node.label)
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(.ultraThinMaterial, in: Capsule())
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .position(point)
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.35).onEnded { _ in
+                            onNodeLongPressed(node.id, point)
+                        }
+                    )
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onAppear {
+                viewModel.setViewSize(geo.size)
+            }
+            .onChange(of: geo.size) { _, newSize in
+                viewModel.setViewSize(newSize)
+            }
+        }
+    }
+
+    private func displayedPoint(for node: GraphViewModel.Node) -> CGPoint {
+        CGPoint(x: CGFloat(node.position.x), y: CGFloat(node.position.y))
+    }
+
+    private func nodeColor(_ value: SIMD4<Float>) -> Color {
+        Color(
+            red: Double(value.x),
+            green: Double(value.y),
+            blue: Double(value.z),
+            opacity: Double(value.w)
+        )
     }
 }
 
@@ -200,7 +289,7 @@ private struct NodePopover: View {
                 HStack(spacing: 12) {
                     popoverStat(label: "Initiation", value: "\(Int(person.initiationRatio * 100))% you")
                     if let sentiment = person.dominantSentiment {
-                        popoverStat(label: "Feeling", value: sentiment.rawValue)
+                        popoverStat(label: "Tone", value: sentiment.displayName)
                     }
                 }
 

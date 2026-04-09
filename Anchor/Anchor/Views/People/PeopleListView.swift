@@ -133,10 +133,10 @@ private struct PeopleLegendView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 12) {
-                item(color: AnchorColors.secure, label: "Secure")
-                item(color: AnchorColors.anxious, label: "Anxious")
-                item(color: AnchorColors.avoidant, label: "Avoidant")
-                item(color: AnchorColors.neutral, label: "No sentiment yet")
+                item(color: AnchorColors.secure, label: SentimentLabel.secure.displayName)
+                item(color: AnchorColors.anxious, label: SentimentLabel.anxious.displayName)
+                item(color: AnchorColors.avoidant, label: SentimentLabel.avoidant.displayName)
+                item(color: AnchorColors.neutral, label: "No read yet")
             }
         }
         .padding(12)

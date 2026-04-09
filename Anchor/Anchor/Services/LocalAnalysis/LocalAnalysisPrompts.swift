@@ -91,7 +91,7 @@ enum LocalAnalysisPrompts {
         \(summariesJSON)
 
         Your job:
-        1. Write a narrative paragraph (3-5 sentences) summarizing the social week honestly. Note patterns, standouts, or shifts. Be direct — this person tracks their relationships to cut through their own anxious narratives.
+        1. Write a narrative paragraph (3-5 sentences) summarizing the social week honestly. Note patterns, standouts, or shifts. Be direct, specific, and calm.
         2. Identify the top 3 most significant patterns across all people this week (initiation imbalances, sentiment changes, perception mismatches, context-dependent behavior).
         3. List initiation ratio changes for the top 5 most-interacted people (or fewer if <5 interactions happened).
 

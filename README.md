@@ -1,6 +1,6 @@
 # Anchor
 
-Anchor is a relationship intelligence platform for tracking interactions, measuring recurring social patterns, and comparing perception against behavioral reality across iOS, backend, web, and analysis workflows.
+Anchor is a relationship intelligence app for tracking interactions, spotting recurring patterns, and comparing perception against behavioral reality across iOS, backend, web, and analysis workflows.
 
 ## Core Capabilities
 
@@ -15,7 +15,7 @@ Anchor is a relationship intelligence platform for tracking interactions, measur
 
 - iOS app: SwiftUI + SwiftData + on-device analysis + Foundation Models fallback
 - Backend API: Node.js + Express + PostgreSQL + pgvector
-- LLM pipeline: logger, analyzer, and critic stages with OpenAI or Ollama
+- LLM pipeline: logger, analyzer, and critic stages using local Ollama
 - Statistical analysis: R Plumber service
 - Web dashboard: React + Vite
 - Training utilities: Hugging Face, CUDA, MLX, and Core ML export scripts
@@ -33,29 +33,32 @@ Anchor is a relationship intelligence platform for tracking interactions, measur
    - `docker compose up -d postgres`
 2. Configure backend environment:
    - copy `backend/.env.example` to `backend/.env`
-3. Start the backend:
+3. Start Ollama and pull models:
+   - `ollama pull qwen3:8b`
+   - `ollama pull all-minilm`
+4. Start the backend:
    - `cd backend`
    - `npm install`
    - `npm run migrate`
    - `npm run start`
-4. Start the R analysis service:
+5. Start the R analysis service:
    - `cd backend`
    - `Rscript analysis/plumber_server.R`
-5. Start the web dashboard:
+6. Start the web dashboard:
    - `cd web`
    - `npm install`
    - `npm run dev`
-6. Open the iOS app in Xcode:
+7. Open the iOS app in Xcode:
    - `open Anchor/Anchor.xcodeproj`
 
 ## Service Configuration
 
-- `LLM_PROVIDER`: choose `openai` or `ollama`
-- `OPENAI_API_KEY`: enables OpenAI-backed enrichment when `LLM_PROVIDER=openai`
-- `OPENAI_CHAT_MODEL`, `OPENAI_EMBEDDING_MODEL`: override OpenAI defaults
+- `LLM_PROVIDER`: keep this set to `ollama` for the local setup
 - `OLLAMA_BASE_URL`, `OLLAMA_CHAT_MODEL`, `OLLAMA_EMBEDDING_MODEL`: point the backend at a local Ollama instance
 - `R_PLUMBER_URL`: enables R-backed perception and clustering analysis
 - `GET /health`: reports configured backend, LLM, Ollama, and R service status
+
+OpenAI is still supported as an optional provider, but it is not part of the default local setup.
 
 ## Notes
 

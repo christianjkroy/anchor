@@ -106,7 +106,9 @@ final class GraphViewModel {
     func nodeAt(point: CGPoint, viewSize: CGSize) -> Node? {
         let p = SIMD2<Float>(Float(point.x), Float(point.y))
         return nodes.first { node in
-            simd_distance(node.position, p) <= node.radius * 1.3
+            let displayedPosition = node.position * zoomScale + (panOffset * zoomScale)
+            let displayedRadius = max(node.radius * zoomScale, 24)
+            return simd_distance(displayedPosition, p) <= displayedRadius * 1.3
         }
     }
 

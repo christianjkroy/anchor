@@ -10,6 +10,9 @@ final class Interaction {
     var feelingBefore: FeelingBefore
     var feelingDuring: FeelingDuring
     var feelingAfter: FeelingAfter
+    var customFeelingBefore: String?
+    var customFeelingDuring: String?
+    var customFeelingAfter: String?
     var locationContext: LocationContext?
     var note: String
     // Populated in Phase 2
@@ -42,5 +45,38 @@ final class Interaction {
         self.feelingAfter = feelingAfter
         self.locationContext = locationContext
         self.note = note
+    }
+
+    var displayFeelingBefore: String {
+        if feelingBefore == .other, let customFeelingBefore, !customFeelingBefore.isEmpty {
+            return customFeelingBefore
+        }
+        return feelingBefore.rawValue
+    }
+
+    var displayFeelingDuring: String {
+        if feelingDuring == .other, let customFeelingDuring, !customFeelingDuring.isEmpty {
+            return customFeelingDuring
+        }
+        return feelingDuring.rawValue
+    }
+
+    var displayFeelingAfter: String {
+        if feelingAfter == .other, let customFeelingAfter, !customFeelingAfter.isEmpty {
+            return customFeelingAfter
+        }
+        return feelingAfter.rawValue
+    }
+
+    var apiFeelingBefore: String {
+        displayFeelingBefore.lowercased()
+    }
+
+    var apiFeelingDuring: String {
+        displayFeelingDuring.lowercased()
+    }
+
+    var apiFeelingAfter: String {
+        displayFeelingAfter.lowercased()
     }
 }

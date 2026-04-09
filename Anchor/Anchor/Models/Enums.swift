@@ -59,6 +59,7 @@ enum FeelingBefore: String, CaseIterable, Codable, Hashable {
     case neutral  = "Neutral"
     case excited  = "Excited"
     case avoidant = "Avoidant"
+    case other    = "Other"
 
     var color: Color {
         switch self {
@@ -66,6 +67,7 @@ enum FeelingBefore: String, CaseIterable, Codable, Hashable {
         case .neutral:  return AnchorColors.neutral
         case .excited:  return Color(red: 0.88, green: 0.78, blue: 0.55)
         case .avoidant: return AnchorColors.avoidant
+        case .other:    return AnchorColors.neutral
         }
     }
 }
@@ -77,6 +79,7 @@ enum FeelingDuring: String, CaseIterable, Codable, Hashable {
     case secure       = "Secure"
     case performative = "Performative"
     case authentic    = "Authentic"
+    case other        = "Other"
 
     var color: Color {
         switch self {
@@ -86,6 +89,7 @@ enum FeelingDuring: String, CaseIterable, Codable, Hashable {
         case .secure:       return AnchorColors.secure
         case .performative: return AnchorColors.neutral
         case .authentic:    return Color(red: 0.53, green: 0.81, blue: 0.65)
+        case .other:        return AnchorColors.neutral
         }
     }
 }
@@ -97,6 +101,7 @@ enum FeelingAfter: String, CaseIterable, Codable, Hashable {
     case calm      = "Calm"
     case regretful = "Regretful"
     case satisfied = "Satisfied"
+    case other     = "Other"
 
     var color: Color {
         switch self {
@@ -106,6 +111,7 @@ enum FeelingAfter: String, CaseIterable, Codable, Hashable {
         case .calm:      return AnchorColors.neutral
         case .regretful: return AnchorColors.anxious
         case .satisfied: return AnchorColors.secure
+        case .other:     return AnchorColors.neutral
         }
     }
 }

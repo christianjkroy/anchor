@@ -45,6 +45,13 @@ final class Person {
         return grouped.max(by: { $0.value.count < $1.value.count })?.key
     }
 
+    var mostCommonFeelingAfterText: String? {
+        let labels = interactions.map(\.displayFeelingAfter)
+        guard !labels.isEmpty else { return nil }
+        let grouped = Dictionary(grouping: labels, by: { $0 })
+        return grouped.max(by: { $0.value.count < $1.value.count })?.key
+    }
+
     var dominantSentiment: SentimentLabel? {
         let labeled = interactions.compactMap(\.sentimentLabel)
         guard !labeled.isEmpty else { return nil }

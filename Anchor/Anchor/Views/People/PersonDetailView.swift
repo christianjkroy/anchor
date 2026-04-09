@@ -212,18 +212,18 @@ private struct StatsBarView: View {
                     StatCell(label: "Last seen", value: days == 0 ? "Today" : "\(days)d ago")
                 }
 
-                if let feeling = person.mostCommonFeelingAfter {
+                if let feeling = person.mostCommonFeelingAfterText {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Usually feel after")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                        Text(feeling.rawValue)
+                        Text(feeling)
                             .font(.caption)
                             .fontWeight(.medium)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3)
-                            .background(Capsule().fill(feeling.color.opacity(0.18)))
-                            .foregroundStyle(feeling.color)
+                            .background(Capsule().fill(AnchorColors.neutral.opacity(0.18)))
+                            .foregroundStyle(AnchorColors.neutral)
                     }
                 }
             }
@@ -292,15 +292,15 @@ struct InteractionRowView: View {
 
             // Feelings row
             HStack(spacing: 6) {
-                FeelPill(label: interaction.feelingBefore.rawValue, color: interaction.feelingBefore.color)
+                FeelPill(label: interaction.displayFeelingBefore, color: interaction.feelingBefore.color)
                 Image(systemName: "arrow.right")
                     .font(.caption2)
                     .foregroundStyle(Color(.tertiaryLabel))
-                FeelPill(label: interaction.feelingDuring.rawValue, color: interaction.feelingDuring.color)
+                FeelPill(label: interaction.displayFeelingDuring, color: interaction.feelingDuring.color)
                 Image(systemName: "arrow.right")
                     .font(.caption2)
                     .foregroundStyle(Color(.tertiaryLabel))
-                FeelPill(label: interaction.feelingAfter.rawValue, color: interaction.feelingAfter.color)
+                FeelPill(label: interaction.displayFeelingAfter, color: interaction.feelingAfter.color)
             }
 
             // Initiator

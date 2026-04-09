@@ -11,11 +11,12 @@ struct LogInteractionView: View {
     @State private var feelingBefore: FeelingBefore = .neutral
     @State private var feelingDuring: FeelingDuring = .connected
     @State private var feelingAfter: FeelingAfter = .calm
+    @State private var customFeelingBefore = ""
+    @State private var customFeelingDuring = ""
+    @State private var customFeelingAfter = ""
     @State private var locationContext: LocationContext? = nil
     @State private var note = ""
     @State private var durationText = ""
-    @State private var micPermissionGranted = false
-    @StateObject private var speech = SpeechRecognizer()
 
     private let noteLimit = 500
 
@@ -37,14 +38,23 @@ struct LogInteractionView: View {
                         PillSelector(title: "How did you feel before?",
                                      selection: $feelingBefore,
                                      pillColor: { $0.color })
+                        if feelingBefore == .other {
+                            customFeelingField("Type how you felt before", text: $customFeelingBefore)
+                        }
 
                         PillSelector(title: "How did you feel during?",
                                      selection: $feelingDuring,
                                      pillColor: { $0.color })
+                        if feelingDuring == .other {
+                            customFeelingField("Type how you felt during", text: $customFeelingDuring)
+                        }
 
                         PillSelector(title: "How did you feel after?",
                                      selection: $feelingAfter,
                                      pillColor: { $0.color })
+                        if feelingAfter == .other {
+                            customFeelingField("Type how you felt after", text: $customFeelingAfter)
+                        }
                     }
 
                     formCard(title: "Context", subtitle: "Add optional detail if it helps explain the dynamic.") {
@@ -52,73 +62,38 @@ struct LogInteractionView: View {
                                             selection: $locationContext)
 
                         VStack(alignment: .leading, spacing: 8) {
-                            HStack {
-                                Text("Reflection")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .foregroundStyle(.secondary)
-                                Spacer()
-                                Button {
-                                    Task { await toggleVoice() }
-                                } label: {
-                                    Label(speech.isRecording ? "Stop" : "Dictate", systemImage: speech.isRecording ? "stop.circle.fill" : "mic.circle")
-                                        .font(.caption)
-                                        .fontWeight(.semibold)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 6)
-                                        .background(Capsule().fill((speech.isRecording ? AnchorColors.anxious : AnchorColors.secure).opacity(0.12)))
-                                        .foregroundStyle(speech.isRecording ? AnchorColors.anxious : AnchorColors.secure)
-                                        .symbolEffect(.pulse, isActive: speech.isRecording)
-                                }
-                                .accessibilityLabel(speech.isRecording ? "Stop recording" : "Dictate note")
-                            }
+                            Text("Reflection")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.secondary)
 
                             ZStack(alignment: .topLeading) {
-                                if note.isEmpty && !speech.isRecording {
+                                if note.isEmpty {
                                     Text("What stood out? What did you notice about the energy, effort, or vibe?")
                                         .foregroundStyle(Color(.placeholderText))
                                         .padding(8)
                                         .allowsHitTesting(false)
                                 }
-                                if speech.isRecording {
-                                    Text(speech.transcript.isEmpty ? "Listening…" : speech.transcript)
-                                        .foregroundStyle(speech.transcript.isEmpty ? Color(.placeholderText) : .primary)
-                                        .padding(8)
-                                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                                } else {
-                                    TextEditor(text: $note)
-                                        .frame(minHeight: 110)
-                                        .onChange(of: note) { _, new in
-                                            if new.count > noteLimit {
-                                                note = String(new.prefix(noteLimit))
-                                            }
+                                TextEditor(text: $note)
+                                    .frame(minHeight: 110)
+                                    .onChange(of: note) { _, new in
+                                        if new.count > noteLimit {
+                                            note = String(new.prefix(noteLimit))
                                         }
-                                }
+                                    }
                             }
                             .font(.body)
                             .padding(4)
                             .frame(minHeight: 110)
                             .background(
                                 RoundedRectangle(cornerRadius: 14)
-                                    .fill(speech.isRecording
-                                          ? AnchorColors.anxious.opacity(0.06)
-                                          : Color(.systemGray6))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 14)
-                                            .strokeBorder(speech.isRecording ? AnchorColors.anxious.opacity(0.4) : Color.clear, lineWidth: 1)
-                                    )
+                                    .fill(Color(.systemGray6))
                             )
 
                             HStack {
-                                if let err = speech.errorMessage {
-                                    Text(err)
-                                        .font(.caption2)
-                                        .foregroundStyle(AnchorColors.anxious)
-                                } else {
-                                    Text("Notes help the weekly digest and pattern detection feel sharper.")
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                }
+                                Text("Notes help the weekly digest and pattern detection feel sharper.")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
                                 Spacer()
                                 Text("\(note.count)/\(noteLimit)")
                                     .font(.caption2)
@@ -153,7 +128,6 @@ struct LogInteractionView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Log Interaction")
             .navigationBarTitleDisplayMode(.inline)
-            .onDisappear { speech.stopRecording() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -203,26 +177,16 @@ struct LogInteractionView: View {
         )
     }
 
-    private func toggleVoice() async {
-        if speech.isRecording {
-            speech.stopRecording()
-            // Append transcript to note
-            let transcribed = speech.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !transcribed.isEmpty {
-                note = note.isEmpty ? transcribed : note + " " + transcribed
-                speech.transcript = ""
-            }
-        } else {
-            if !micPermissionGranted {
-                micPermissionGranted = await speech.requestPermission()
-                guard micPermissionGranted else {
-                    speech.errorMessage = "Microphone or speech access denied. Enable in Settings."
-                    return
-                }
-            }
-            speech.transcript = ""
-            speech.startRecording()
-        }
+    private func customFeelingField(_ placeholder: String, text: Binding<String>) -> some View {
+        TextField(placeholder, text: text)
+            .textInputAutocapitalization(.words)
+            .autocorrectionDisabled(false)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+            )
     }
 
     private func save() {
@@ -236,6 +200,9 @@ struct LogInteractionView: View {
             locationContext: locationContext,
             note: note
         )
+        interaction.customFeelingBefore = feelingBefore == .other ? customFeelingBefore.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+        interaction.customFeelingDuring = feelingDuring == .other ? customFeelingDuring.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+        interaction.customFeelingAfter = feelingAfter == .other ? customFeelingAfter.trimmingCharacters(in: .whitespacesAndNewlines) : nil
         person.interactions.append(interaction)
         HapticFeedback.medium()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -244,9 +211,9 @@ struct LogInteractionView: View {
         // Snapshot enum values before the async boundary
         let iType         = interactionType.backendValue
         let iInitiatedBy  = initiator.backendValue
-        let iBefore       = feelingBefore.rawValue.lowercased()
-        let iDuring       = feelingDuring.rawValue.lowercased()
-        let iAfter        = feelingAfter.rawValue.lowercased()
+        let iBefore       = interaction.apiFeelingBefore
+        let iDuring       = interaction.apiFeelingDuring
+        let iAfter        = interaction.apiFeelingAfter
         let iLocation     = locationContext?.rawValue.lowercased()
         let iDuration     = Int(durationText)
         let iNote         = note

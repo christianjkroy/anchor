@@ -94,12 +94,14 @@ actor LocalAnalysisService {
         case .avoidant: avoidant += 1
         case .excited:  secure   += 1
         case .neutral:  break
+        case .other:    break
         }
 
         switch during {
         case .connected, .secure, .authentic: secure   += 2
         case .anxious:                        anxious  += 2
         case .disconnected, .performative:    avoidant += 2
+        case .other:                          break
         }
 
         switch after {
@@ -107,6 +109,7 @@ actor LocalAnalysisService {
         case .calm:                  secure   += 2
         case .anxious, .regretful:   anxious  += 3
         case .drained:               avoidant += 3
+        case .other:                 break
         }
 
         let total = Double(anxious + secure + avoidant)
@@ -261,7 +264,6 @@ actor LocalAnalysisService {
 
     private static func templateNarrative(people: [Person], thirtyDaysAgo: Date, now: Date) -> String {
         let sorted = people.sorted { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count > $1.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count }
-        let mostActive = sorted.first!
         let allRecent = people.flatMap { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo } }
         let secureCount  = allRecent.filter { $0.sentimentLabel == .secure  }.count
         let anxiousCount = allRecent.filter { $0.sentimentLabel == .anxious }.count

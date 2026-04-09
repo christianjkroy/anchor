@@ -145,7 +145,7 @@ final class GraphRenderer: NSObject, MTKViewDelegate {
 
         for (i, node) in nodes.enumerated() {
             let isSelected = selectedNodeIndex == i ? UInt32(1) : UInt32(0)
-            let pos = node.position + panOffset
+            let pos = node.position
 
             let base = UInt16(verts.count)
             let uvs: [SIMD2<Float>] = [
@@ -173,8 +173,8 @@ final class GraphRenderer: NSObject, MTKViewDelegate {
         var verts: [EdgeVertex] = []
         for edge in edges {
             guard edge.sourceIndex < nodes.count, edge.targetIndex < nodes.count else { continue }
-            let a = nodes[edge.sourceIndex].position + panOffset
-            let b = nodes[edge.targetIndex].position + panOffset
+            let a = nodes[edge.sourceIndex].position
+            let b = nodes[edge.targetIndex].position
             let alpha = min(edge.weight / 5.0, 1.0)
             verts.append(EdgeVertex(position: a, alpha: alpha))
             verts.append(EdgeVertex(position: b, alpha: alpha))

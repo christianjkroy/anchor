@@ -43,6 +43,14 @@ final class GraphViewModel {
             !person.interactions.filter { $0.timestamp >= dateRange.lowerBound && $0.timestamp <= dateRange.upperBound }.isEmpty
         }
 
+        panOffset = .zero
+        zoomScale = 1.0
+
+        let availableWidth = max(Float(viewSize.width) - 96, 180)
+        let availableHeight = max(Float(viewSize.height) - 260, 220)
+        let layoutRadius = max(70, min(availableWidth, availableHeight) * 0.28)
+        let center = graphCenter
+
         nodes = filtered.enumerated().map { idx, person in
             let count = person.interactions.filter {
                 $0.timestamp >= dateRange.lowerBound && $0.timestamp <= dateRange.upperBound
@@ -50,10 +58,9 @@ final class GraphViewModel {
             let radius = Float(max(50, min(95, 30 + sqrt(Double(count)) * 14)))
             let color = color(for: person)
             let angle = Float(idx) / Float(max(filtered.count, 1)) * 2 * .pi
-            let spread: Float = 180
             let position = SIMD2<Float>(
-                Float(viewSize.width / 2) + spread * cos(angle),
-                Float(viewSize.height / 2) + spread * sin(angle)
+                center.x + layoutRadius * cos(angle),
+                center.y + layoutRadius * sin(angle)
             )
             return Node(id: person.persistentModelID, position: position, radius: radius, color: color, label: person.name)
         }
@@ -93,8 +100,7 @@ final class GraphViewModel {
 
     func step(dt: Float) {
         guard !isPaused, !nodes.isEmpty else { return }
-        let center = SIMD2<Float>(Float(viewSize.width / 2), Float(viewSize.height / 2))
-        simulation.step(nodes: &nodes, edges: edges, dt: dt, center: center)
+        simulation.step(nodes: &nodes, edges: edges, dt: dt, center: graphCenter)
     }
 
     func setViewSize(_ size: CGSize) {
@@ -138,5 +144,12 @@ final class GraphViewModel {
         case .romantic:
             return SIMD4<Float>(0.93, 0.60, 0.57, 1.0)
         }
+    }
+
+    private var graphCenter: SIMD2<Float> {
+        SIMD2<Float>(
+            Float(viewSize.width) / 2,
+            max(Float(viewSize.height) * 0.42, 220)
+        )
     }
 }

@@ -49,7 +49,7 @@ struct GraphTabView: View {
                             .padding(.horizontal, 40)
                     }
                 } else {
-                    ZStack(alignment: .bottom) {
+                    ZStack {
                         LinearGradient(
                             colors: [
                                 Color(red: 0.97, green: 0.98, blue: 0.98),
@@ -73,7 +73,6 @@ struct GraphTabView: View {
                                     showPopover = true
                                 }
                             )
-                            .ignoresSafeArea()
                             .onAppear {
                                 viewModel.setViewSize(geo.size)
                                 viewModel.rebuild(people: people)
@@ -86,16 +85,16 @@ struct GraphTabView: View {
                                 viewModel.rebuild(people: people)
                             }
                         }
-
-                        VStack(spacing: 0) {
-                            GraphLegend(peopleCount: people.count)
-                                .padding(.horizontal)
-                                .padding(.top, 12)
-                            DateRangeSlider(start: $dateRangeStart)
-                                .padding(.horizontal)
-                                .padding(.vertical, 12)
-                                .background(.ultraThinMaterial)
-                        }
+                    }
+                    .safeAreaInset(edge: .top) {
+                        GraphLegend(peopleCount: people.count)
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+                    }
+                    .safeAreaInset(edge: .bottom) {
+                        DateRangeSlider(start: $dateRangeStart)
+                            .padding(.horizontal)
+                            .padding(.bottom, 8)
                     }
                     .overlay(alignment: .center) {
                         if people.isEmpty {

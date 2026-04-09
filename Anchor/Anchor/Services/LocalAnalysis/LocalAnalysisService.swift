@@ -206,15 +206,46 @@ actor LocalAnalysisService {
         let allRecent = people.flatMap { $0.interactions.filter { $0.timestamp >= thirtyDaysAgo } }
         let secureCount  = allRecent.filter { $0.sentimentLabel == .secure  }.count
         let anxiousCount = allRecent.filter { $0.sentimentLabel == .anxious }.count
+        let avoidantCount = allRecent.filter { $0.sentimentLabel == .avoidant }.count
+        let drainingCount = allRecent.filter { [.drained, .anxious, .regretful].contains($0.feelingAfter) }.count
+        let supportiveCount = allRecent.filter { [.calm, .energized, .satisfied].contains($0.feelingAfter) }.count
         let seed = allRecent.count + people.count
+        let strainedPeopleCount = people.filter { person in
+            let recent = person.interactions.filter { $0.timestamp >= thirtyDaysAgo }
+            guard !recent.isEmpty else { return false }
+            let recentMeaningful = recent.filter { $0.initiator != .unclear }
+            let recentInitiationRatio: Double = {
+                guard !recentMeaningful.isEmpty else { return 0.5 }
+                return Double(recentMeaningful.filter { $0.initiator == .you }.count) / Double(recentMeaningful.count)
+            }()
+            let dominantRecentFeeling = Dictionary(grouping: recent.map(\.feelingAfter), by: { $0 })
+                .max(by: { $0.value.count < $1.value.count })?.key
+            let dominantRecentSentiment = Dictionary(grouping: recent.compactMap(\.sentimentLabel), by: { $0 })
+                .max(by: { $0.value.count < $1.value.count })?.key
+
+            return recentInitiationRatio > 0.72
+                || dominantRecentFeeling == .drained
+                || dominantRecentFeeling == .regretful
+                || dominantRecentFeeling == .anxious
+                || dominantRecentSentiment == .anxious
+                || dominantRecentSentiment == .avoidant
+        }.count
 
         // Build per-person notes for everyone
         var personNotes: [String] = []
         for person in sorted {
-            let count = person.interactions.filter { $0.timestamp >= thirtyDaysAgo }.count
-            let feeling = person.mostCommonFeelingAfter
-            let initPct = Int(person.initiationRatio * 100)
-            let tone = person.dominantSentiment
+            let recentInteractions = person.interactions.filter { $0.timestamp >= thirtyDaysAgo }
+            let count = recentInteractions.count
+            let feeling = Dictionary(grouping: recentInteractions.map(\.feelingAfter), by: { $0 })
+                .max(by: { $0.value.count < $1.value.count })?.key
+            let recentMeaningful = recentInteractions.filter { $0.initiator != .unclear }
+            let initPct: Int = {
+                guard !recentMeaningful.isEmpty else { return 50 }
+                let ratio = Double(recentMeaningful.filter { $0.initiator == .you }.count) / Double(recentMeaningful.count)
+                return Int(ratio * 100)
+            }()
+            let tone = Dictionary(grouping: recentInteractions.compactMap(\.sentimentLabel), by: { $0 })
+                .max(by: { $0.value.count < $1.value.count })?.key
 
             var note = "\(person.name)"
             if count == 1 {
@@ -248,7 +279,21 @@ actor LocalAnalysisService {
 
         // Overall tone sentence
         let overallTone: String
-        if secureCount > anxiousCount * 2 {
+        if strainedPeopleCount > 0 && drainingCount > 0 && supportiveCount > 0 {
+            let opts = [
+                "This stretch feels mixed. Some interactions have been grounding, but at least one relationship is clearly taking more out of you.",
+                "There is good here, but it is not settled across the board. Some dynamics feel supportive, while others are still draining.",
+                "The overall picture feels uneven. You have some steady moments, but there is still friction in the mix."
+            ]
+            overallTone = opts[seed % opts.count]
+        } else if drainingCount > supportiveCount || strainedPeopleCount >= max(1, people.count / 2) || (anxiousCount + avoidantCount) > secureCount {
+            let opts = [
+                "This period has felt a bit strained overall.",
+                "There is some tension in the mix right now, and it seems worth taking seriously.",
+                "The overall read here is not settled. A few dynamics look like they are costing you energy."
+            ]
+            overallTone = opts[seed % opts.count]
+        } else if secureCount > anxiousCount * 2 && supportiveCount >= drainingCount && strainedPeopleCount == 0 {
             let opts = ["Your social world felt relatively steady this month.", "The general vibe has been solid, and more grounded than not.", "Things have been feeling pretty settled across the board."]
             overallTone = opts[seed % opts.count]
         } else if anxiousCount > secureCount {

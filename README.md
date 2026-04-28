@@ -1,69 +1,92 @@
 # Anchor
 
-Anchor is a relationship intelligence app for tracking interactions, spotting recurring patterns, and comparing perception against behavioral reality across iOS, backend, web, and analysis workflows.
+Anchor is a relationship intelligence app that tracks your interactions, detects recurring behavioral patterns, and surfaces the gap between how you perceive a relationship and how you actually behave in it.
 
-## Core Capabilities
+Log an interaction, note how you felt before, during, and after — Anchor does the rest: sentiment analysis, pattern detection, and weekly digests that synthesize what the data actually says.
 
-- Log people and interactions from the iOS app
-- Sync people and interactions to a Node.js API
-- Enrich interactions asynchronously with sentiment labels and embeddings
-- Generate perception checks and weekly digests
-- Review relationship data in a lightweight web dashboard
-- Experiment with local training and export workflows for sentiment models
+## What it does
+
+- **Interaction logging** — record who, what type, who initiated, feelings across three stages, duration, location, and notes
+- **Sentiment analysis** — on-device classification maps feeling signals to secure / anxious / avoidant with confidence scores
+- **Pattern detection** — surfaces initiation imbalance, sentiment drift, context-dependent behavior, and perception mismatches (requires ≥ 4 interactions)
+- **Metal relationship graph** — force-directed simulation at 60 fps; pan, zoom, tap, and long-press to explore your network
+- **Weekly digests** — generated via Apple Foundation Models (iOS 26+) with a rich template fallback, fired on Sundays
+- **Cloud sync** — optional Supabase backend with end-to-end encryption
+- **Backend enrichment** — async sentiment labeling, pgvector embeddings for semantic search, and LLM-powered digest generation via Ollama
+- **Web dashboard** — React + Vite view of relationship data synced to the backend
+- **R analysis** — Plumber service for perception checks and clustering
 
 ## Architecture
 
-- iOS app: SwiftUI + SwiftData + on-device analysis + Foundation Models fallback
-- Backend API: Node.js + Express + PostgreSQL + pgvector
-- LLM pipeline: logger, analyzer, and critic stages using local Ollama
-- Statistical analysis: R Plumber service
-- Web dashboard: React + Vite
-- Training utilities: Hugging Face, CUDA, MLX, and Core ML export scripts
+| Layer | Stack |
+|---|---|
+| iOS app | SwiftUI · SwiftData · Metal · Apple Foundation Models |
+| Backend API | Node.js · Express · PostgreSQL · pgvector |
+| LLM pipeline | Ollama (local) — logger → analyzer → critic |
+| Statistical analysis | R · Plumber |
+| Web dashboard | React · Vite |
+| Training utilities | Hugging Face · MLX · Core ML export |
 
-## Repository Layout
+## Repository layout
 
-- `Anchor/`: iOS application and project files
-- `backend/`: API server, migrations, agents, embeddings, and R integration
-- `web/`: browser-based relationship dashboard
-- `training/`: model fine-tuning, validation, export, and conversion scripts
+```
+Anchor/       iOS application (SwiftUI + SwiftData + Metal)
+backend/      API server, migrations, agents, embeddings, R integration
+web/          Browser-based relationship dashboard
+training/     Model fine-tuning, validation, and Core ML export scripts
+```
 
-## Quick Start
+## Quick start (full stack)
 
-1. Start PostgreSQL:
-   - `docker compose up -d postgres`
-2. Configure backend environment:
-   - copy `backend/.env.example` to `backend/.env`
-3. Start Ollama and pull models:
-   - `ollama pull qwen3:8b`
-   - `ollama pull all-minilm`
-4. Start the backend:
-   - `cd backend`
-   - `npm install`
-   - `npm run migrate`
-   - `npm run start`
-5. Start the R analysis service:
-   - `cd backend`
-   - `Rscript analysis/plumber_server.R`
-6. Start the web dashboard:
-   - `cd web`
-   - `npm install`
-   - `npm run dev`
-7. Open the iOS app in Xcode:
-   - `open Anchor/Anchor.xcodeproj`
+**Prerequisites:** Docker, Node.js, Ollama, R, Xcode 26+
 
-## Service Configuration
+```bash
+# 1. Start PostgreSQL
+docker compose up -d postgres
 
-- `LLM_PROVIDER`: keep this set to `ollama` for the local setup
-- `OLLAMA_BASE_URL`, `OLLAMA_CHAT_MODEL`, `OLLAMA_EMBEDDING_MODEL`: point the backend at a local Ollama instance
-- `R_PLUMBER_URL`: enables R-backed perception and clustering analysis
-- `GET /health`: reports configured backend, LLM, Ollama, and R service status
+# 2. Configure backend
+cp backend/.env.example backend/.env   # fill in values
 
-OpenAI is still supported as an optional provider, but it is not part of the default local setup.
+# 3. Pull Ollama models
+ollama pull llama3.2
+ollama pull all-minilm
+
+# 4. Start the backend
+cd backend && npm install && npm run migrate && npm run start
+
+# 5. Start the R analysis service (separate terminal)
+cd backend && Rscript analysis/plumber_server.R
+
+# 6. Start the web dashboard (separate terminal)
+cd web && npm install && npm run dev
+
+# 7. Open the iOS app
+open Anchor/Anchor.xcodeproj
+```
+
+## iOS only (no backend required)
+
+The iOS app is fully self-contained. On-device analysis runs without a server — just open `Anchor/Anchor.xcodeproj` in Xcode and run on a device or simulator. Cloud sync and backend enrichment are opt-in.
+
+## Backend configuration
+
+| Variable | Purpose |
+|---|---|
+| `LLM_PROVIDER` | `ollama` or `openai` (default: `openai`) |
+| `OPENAI_API_KEY` | Required when `LLM_PROVIDER=openai` |
+| `OPENAI_CHAT_MODEL` | Default: `gpt-4o-mini` |
+| `OPENAI_EMBEDDING_MODEL` | Default: `text-embedding-3-small` |
+| `OLLAMA_BASE_URL` | URL of your Ollama instance |
+| `OLLAMA_CHAT_MODEL` | Default: `llama3.2` |
+| `OLLAMA_EMBEDDING_MODEL` | Default: `all-minilm` |
+| `R_PLUMBER_URL` | Enables R-backed perception and clustering analysis |
+| `JWT_SECRET` | Auth token signing key |
+
+`GET /health` reports the status of the backend, LLM, Ollama, and R services.
 
 ## Notes
 
-- Interaction enrichment runs asynchronously after interaction creation.
-- Embeddings are stored in PostgreSQL with `pgvector` for semantic search.
-- Weekly digests support upsert by `(user_id, week_start_date)`.
-- R analysis requires `plumber` and `jsonlite`, with `DBI` and `RPostgres` recommended for database-backed analysis.
-- Generated folders such as `node_modules/`, `web/dist/`, `.venv/`, and `__pycache__/` should remain untracked.
+- Interaction enrichment (sentiment + embeddings) runs asynchronously after creation.
+- Weekly digests upsert by `(user_id, week_start_date)`.
+- R analysis requires the `plumber` and `jsonlite` packages; `DBI` and `RPostgres` are recommended for database-backed analysis.
+- `ClaudeService.swift` is named for a prior approach — it now runs fully on-device via rule-based logic and Apple Foundation Models with no external API calls.
